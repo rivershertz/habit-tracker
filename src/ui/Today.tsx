@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { fromDateKey, todayKey } from '../logic/dates';
 import { currentRun } from '../logic/smoking';
+import { perfectDays, XP_PERFECT } from '../logic/xp';
 import { useStore } from '../store/store';
 import { COLORS } from './fx';
 import { HabitCard } from './HabitCard';
@@ -30,6 +31,8 @@ export function Today({ onOpen }: { onOpen: (d: DetailId) => void }) {
     { id: 'reading', done: rDone, color: COLORS.reading },
   ];
   const doneCount = quests.filter((q) => q.done).length;
+  // the bonus only exists once the smoke-free day for `today` has completed, so say so honestly
+  const perfectBonusCounted = perfectDays(state, now).includes(today);
   const date = fromDateKey(today).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
@@ -79,7 +82,9 @@ export function Today({ onOpen }: { onOpen: (d: DetailId) => void }) {
 
       {doneCount === 3 && (
         <motion.p className="perfect" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
-          ⭐ Perfect day — all three goals hit
+          {perfectBonusCounted
+            ? `⭐ Perfect day — +${XP_PERFECT} XP bonus earned`
+            : `⭐ All three goals hit — your +${XP_PERFECT} XP Perfect Day bonus lands once today's smoke-free day completes`}
         </motion.p>
       )}
     </motion.div>
