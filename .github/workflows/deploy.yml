@@ -10,9 +10,12 @@ permissions:
   pages: write
   id-token: write
 
+# Let an in-flight deploy finish instead of cancelling it: a cancelled run can still
+# leave a "github-pages" artifact behind, and re-running it then fails with
+# "Multiple artifacts named github-pages". Newer runs queue behind the current one.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
