@@ -17,15 +17,26 @@ const withRuns = (runs: State['smokingRuns']): State => ({ ...emptyState(), smok
 describe('nextSmokeMilestone', () => {
   it('targets 1 day first, with progress through it', () => {
     const m = nextSmokeMilestone(DAY_MS / 2);
-    expect(m).toMatchObject({ days: 1, prevDays: 0, label: '1 day' });
+    expect(m).toMatchObject({ days: 1, label: '1 day' });
     expect(m.progress).toBeCloseTo(0.5);
     expect(m.remainingMs).toBe(DAY_MS / 2);
   });
 
   it('moves to the next milestone once one is reached', () => {
-    expect(nextSmokeMilestone(1 * DAY_MS)).toMatchObject({ days: 3, prevDays: 1 });
-    expect(nextSmokeMilestone(7 * DAY_MS)).toMatchObject({ days: 14, prevDays: 7, label: '2 weeks' });
+    expect(nextSmokeMilestone(1 * DAY_MS)).toMatchObject({ days: 3 });
+    expect(nextSmokeMilestone(7 * DAY_MS)).toMatchObject({ days: 14, label: '2 weeks' });
     expect(nextSmokeMilestone(10 * DAY_MS).label).toBe('2 weeks');
+  });
+
+  it('progress is the share of the goal covered since quitting, not since the last milestone', () => {
+    // 3 days into a 1-week goal is 3/7 ≈ 43%, not "5% of the way from the 3-day mark"
+    const week = nextSmokeMilestone(3 * DAY_MS + 5 * 3_600_000);
+    expect(week).toMatchObject({ days: 7, label: '1 week' });
+    expect(week.progress).toBeCloseTo((3 + 5 / 24) / 7);
+    // 20 days toward 1 month is 20/30 ≈ 67%
+    expect(nextSmokeMilestone(20 * DAY_MS).progress).toBeCloseTo(20 / 30);
+    // just past a milestone, the next goal's progress is already well above zero
+    expect(nextSmokeMilestone(7 * DAY_MS).progress).toBeCloseTo(0.5);
   });
 
   it('keeps counting in years past the table', () => {

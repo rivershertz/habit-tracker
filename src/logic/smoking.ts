@@ -50,36 +50,24 @@ const MILESTONES: [days: number, label: string][] = [
 
 export interface SmokeMilestone {
   days: number;
-  prevDays: number;
   label: string;
-  /** 0..1 between the previous milestone and this one */
+  /** 0..1: share of the goal covered since quitting (3 days toward 1 week = 3/7) */
   progress: number;
   remainingMs: number;
 }
 
 export function nextSmokeMilestone(ms: number): SmokeMilestone {
   const t = Number.isFinite(ms) && ms > 0 ? ms : 0;
-  let prevDays = 0;
-  let target: [number, string] | undefined;
-  for (const m of MILESTONES) {
-    if (t < m[0] * DAY_MS) {
-      target = m;
-      break;
-    }
-    prevDays = m[0];
-  }
+  let target: [number, string] | undefined = MILESTONES.find(([days]) => t < days * DAY_MS);
   if (!target) {
     const years = Math.floor(t / (365 * DAY_MS)) + 1;
-    prevDays = (years - 1) * 365;
     target = [years * 365, `${years} years`];
   }
   const [days, label] = target;
-  const span = (days - prevDays) * DAY_MS;
   return {
     days,
-    prevDays,
     label,
-    progress: Math.max(0, Math.min(1, (t - prevDays * DAY_MS) / span)),
+    progress: Math.max(0, Math.min(1, t / (days * DAY_MS))),
     remainingMs: days * DAY_MS - t,
   };
 }
