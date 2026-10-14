@@ -17,8 +17,10 @@ export interface CurrentRun {
   minutes: number;
 }
 
-export function currentRun(state: State, now: number): CurrentRun {
-  const open = state.smokingRuns.find((r) => r.end === undefined);
+export const currentRun = (state: State, now: number): CurrentRun => currentRunOf(state.smokingRuns, now);
+
+export function currentRunOf(runs: SmokingRun[], now: number): CurrentRun {
+  const open = runs.find((r) => r.end === undefined);
   if (!open) return { active: false, ms: 0, days: 0, hours: 0, minutes: 0 };
   const ms = runMs(open, now);
   return {
@@ -30,9 +32,10 @@ export function currentRun(state: State, now: number): CurrentRun {
   };
 }
 
-export function bestRunDays(state: State, now: number): number {
-  return state.smokingRuns.reduce((best, r) => Math.max(best, smokeFreeDays(r, now)), 0);
-}
+export const bestRunDays = (state: State, now: number): number => bestRunDaysOf(state.smokingRuns, now);
+
+export const bestRunDaysOf = (runs: SmokingRun[], now: number): number =>
+  runs.reduce((best, r) => Math.max(best, smokeFreeDays(r, now)), 0);
 
 const MILESTONES: [days: number, label: string][] = [
   [1, '1 day'],
@@ -73,21 +76,27 @@ export function nextSmokeMilestone(ms: number): SmokeMilestone {
 }
 
 /** Closes any open run at `ts` (never before its start) and opens a new one. */
-function closeAndOpen(state: State, ts: number): State {
-  const open = state.smokingRuns.find((r) => r.end === undefined);
+export function closeAndOpenRuns(runs: SmokingRun[], ts: number): SmokingRun[] {
+  const open = runs.find((r) => r.end === undefined);
   const boundary = open ? Math.max(ts, open.start) : ts;
-  const runs = state.smokingRuns.map((r) => (r === open ? { ...r, end: boundary } : r));
-  return { ...state, smokingRuns: [...runs, { start: boundary }] };
+  return [...runs.map((r) => (r === open ? { ...r, end: boundary } : r)), { start: boundary }];
 }
+
+const closeAndOpen = (state: State, ts: number): State => ({
+  ...state,
+  smokingRuns: closeAndOpenRuns(state.smokingRuns, ts),
+});
 
 export const startQuit = (state: State, ts: number): State => closeAndOpen(state, ts);
 
 export const relapse = (state: State, now: number): State => closeAndOpen(state, now);
 
 /** Local-date labels of every completed 24h block, across all runs. */
-export function smokeFreeBlockDates(state: State, now: number): string[] {
+export const smokeFreeBlockDates = (state: State, now: number): string[] => freeBlockDates(state.smokingRuns, now);
+
+export function freeBlockDates(runs: SmokingRun[], now: number): string[] {
   const out = new Set<string>();
-  for (const run of state.smokingRuns) {
+  for (const run of runs) {
     const first = todayKey(run.start);
     const n = smokeFreeDays(run, now);
     for (let i = 0; i < n; i++) out.add(addDays(first, i));

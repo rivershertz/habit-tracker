@@ -1,8 +1,8 @@
 import type { EmojiStyle, Theme } from 'emoji-picker-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { todayKey } from '../logic/dates';
-import { HABIT_COLORS, HABIT_EMOJIS } from '../logic/types';
+import { toDateTimeInput, todayKey } from '../logic/dates';
+import { HABIT_COLORS, HABIT_EMOJIS, type HabitKind } from '../logic/types';
 import { HABIT_NAME_MAX } from '../store/storage';
 import { useStore } from '../store/store';
 import { originOf } from './actions';
@@ -15,7 +15,10 @@ const newId = () => `h-${Date.now().toString(36)}-${Math.random().toString(36).s
 
 export function AddHabit({ onClose }: { onClose: () => void }) {
   const { state, now, dispatch } = useStore();
+  const [kind, setKind] = useState<HabitKind>('check');
   const [name, setName] = useState('');
+  const [maxMs] = useState(() => Date.now());
+  const [since, setSince] = useState(() => toDateTimeInput(maxMs));
   const [icon, setIcon] = useState(HABIT_EMOJIS[0]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const customIcon = !HABIT_EMOJIS.includes(icon);
@@ -38,7 +41,10 @@ export function AddHabit({ onClose }: { onClose: () => void }) {
 
   const create = (el: HTMLElement) => {
     if (!trimmed || duplicate) return;
-    dispatch({ type: 'addHabit', habit: { id: newId(), name: trimmed, icon, color, since: todayKey(now) } });
+    const parsed = new Date(since).getTime();
+    const quitStart = Number.isFinite(parsed) ? Math.min(parsed, Date.now()) : Date.now();
+    const habit = { id: newId(), name: trimmed, icon, color, since: todayKey(now), ...(kind === 'quit' ? { kind } : {}) };
+    dispatch({ type: 'addHabit', habit, quitStart: kind === 'quit' ? quitStart : undefined });
     const o = originOf(el);
     burst(o.x, o.y, color);
     haptic([12, 40, 18]);
@@ -69,6 +75,27 @@ export function AddHabit({ onClose }: { onClose: () => void }) {
           <h3>{trimmed || 'New habit'}</h3>
         </div>
 
+        <div className="kind-toggle" role="radiogroup" aria-label="Habit type">
+          {(
+            [
+              ['check', 'Daily check-in', 'Tap it in every day you do it'],
+              ['quit', 'Quit counter', 'Counts up on its own until you slip'],
+            ] as const
+          ).map(([k, title, desc]) => (
+            <button
+              key={k}
+              type="button"
+              role="radio"
+              aria-checked={kind === k}
+              className={kind === k ? 'on' : ''}
+              onClick={() => setKind(k)}
+            >
+              <b>{title}</b>
+              <small>{desc}</small>
+            </button>
+          ))}
+        </div>
+
         <label className="field-label" htmlFor="habit-name">
           Name
         </label>
@@ -78,7 +105,7 @@ export function AddHabit({ onClose }: { onClose: () => void }) {
           autoFocus
           autoComplete="off"
           maxLength={HABIT_NAME_MAX}
-          placeholder="Meditate, drink water, journal…"
+          placeholder={kind === 'quit' ? 'Alcohol-free, no sugar, no doomscrolling…' : 'Meditate, drink water, journal…'}
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
@@ -153,7 +180,27 @@ export function AddHabit({ onClose }: { onClose: () => void }) {
           ))}
         </div>
 
-        <p className="hint">New habits earn XP and badges right away, and join your Perfect Day from today on.</p>
+        {kind === 'quit' && (
+          <>
+            <label className="field-label" htmlFor="habit-since">
+              Last time it happened
+            </label>
+            <input
+              id="habit-since"
+              className="text-input"
+              type="datetime-local"
+              value={since}
+              max={toDateTimeInput(maxMs)}
+              onChange={(e) => setSince(e.target.value)}
+            />
+          </>
+        )}
+
+        <p className="hint">
+          {kind === 'quit'
+            ? 'The counter starts from that moment. Every full day earns XP; tap "I slipped" on the habit to restart it.'
+            : 'New habits earn XP and badges right away, and join your Perfect Day from today on.'}
+        </p>
 
         <div className="modal-actions">
           <button type="button" className="btn ghost" onClick={onClose}>

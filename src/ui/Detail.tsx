@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { todayKey } from '../logic/dates';
-import { bestRunDays, currentRun, smokeFreeBlockDates, smokeFreeDays } from '../logic/smoking';
+import { bestRunDaysOf, currentRunOf, freeBlockDates, smokeFreeDays } from '../logic/smoking';
 import { computeStreaks } from '../logic/streaks';
+import { isQuit, runsOf } from '../logic/types';
 import { useStore } from '../store/store';
 import { originOf, useActions } from './actions';
 import { CountUp } from './CountUp';
@@ -49,18 +50,23 @@ export function Detail({ id, onClose }: { id: DetailId; onClose: () => void }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose, confirm, confirmRemove]);
 
-  const habit = habitObj?.id ?? null;
+  // smoking and custom quit habits count up on their own; the rest are tapped in daily
+  const quit = isSmoke || (habitObj !== null && isQuit(habitObj));
+  const runList = isSmoke ? state.smokingRuns : runsOf(state, id);
+  const habit = habitObj && !quit ? habitObj.id : null;
 
   const marked = useMemo(
-    () => new Set(isSmoke ? smokeFreeBlockDates(state, now) : state.checkins[id] ?? []),
-    [isSmoke, state, now, id],
+    () => new Set(quit ? freeBlockDates(runList, now) : state.checkins[id] ?? []),
+    [quit, runList, state.checkins, now, id],
   );
 
-  const run = currentRun(state, now);
-  const bestRun = bestRunDays(state, now);
+  const run = currentRunOf(runList, now);
+  const bestRun = bestRunDaysOf(runList, now);
   const streaks = habit ? computeStreaks(state.checkins[habit] ?? [], today) : null;
-  const restarts = state.smokingRuns.filter((r) => r.end !== undefined).length;
-  const runs = [...state.smokingRuns].reverse();
+  const restarts = runList.filter((r) => r.end !== undefined).length;
+  const runs = [...runList].reverse();
+  const slip = () => (isSmoke ? smoked() : dispatch({ type: 'slip', habit: id, now: Date.now() }));
+  const historyDays = quit ? marked.size : streaks!.total;
 
   const onToggle = habit
     ? (day: string, el: HTMLElement) =>
@@ -101,7 +107,7 @@ export function Detail({ id, onClose }: { id: DetailId; onClose: () => void }) {
         </AnimatePresence>
 
         <div className="stats">
-          {isSmoke ? (
+          {quit ? (
             <>
               <Stat label="Current" value={run.days} unit="d" />
               <Stat label="Best run" value={bestRun} unit="d" />
@@ -119,16 +125,10 @@ export function Detail({ id, onClose }: { id: DetailId; onClose: () => void }) {
         <section className="panel">
           <h4>Last 18 weeks</h4>
           <Heatmap today={today} marked={marked} color={color} onToggle={onToggle} />
-          {!isSmoke && <p className="hint">Tap any day to log or undo it.</p>}
+          {!quit && <p className="hint">Tap any day to log or undo it.</p>}
         </section>
 
-        {habitObj && !habitObj.builtIn && (
-          <button className="slip-btn remove-btn" onClick={() => setConfirmRemove(true)}>
-            <TrashIcon size={16} /> Remove habit
-          </button>
-        )}
-
-        {isSmoke && (
+        {quit && (
           <>
             <section className="panel">
               <h4>Your runs</h4>
@@ -145,9 +145,15 @@ export function Detail({ id, onClose }: { id: DetailId; onClose: () => void }) {
             </section>
 
             <button className="slip-btn" onClick={() => setConfirm(true)}>
-              I smoked
+              {isSmoke ? 'I smoked' : 'I slipped'}
             </button>
           </>
+        )}
+
+        {habitObj && !habitObj.builtIn && (
+          <button className="slip-btn remove-btn" onClick={() => setConfirmRemove(true)}>
+            <TrashIcon size={16} /> Remove habit
+          </button>
         )}
       </div>
 
@@ -165,8 +171,8 @@ export function Detail({ id, onClose }: { id: DetailId; onClose: () => void }) {
               <h3>It happens.</h3>
               <p>
                 Resetting starts a fresh counter.{' '}
-                {bestRun > 0 ? `Your ${bestRun}-day best run stays on the record, and every` : 'Every'} smoke-free day you
-                earned keeps its XP.
+                {bestRun > 0 ? `Your ${bestRun}-day best run stays on the record, and every` : 'Every'} free day you earned
+                keeps its XP.
               </p>
               <div className="modal-actions">
                 <button className="btn ghost" onClick={() => setConfirm(false)}>
@@ -175,7 +181,7 @@ export function Detail({ id, onClose }: { id: DetailId; onClose: () => void }) {
                 <button
                   className="btn"
                   onClick={() => {
-                    smoked();
+                    slip();
                     setConfirm(false);
                     setNote(
                       bestRun > 0
@@ -202,7 +208,7 @@ export function Detail({ id, onClose }: { id: DetailId; onClose: () => void }) {
             >
               <h3>Remove {habitObj.name}?</h3>
               <p>
-                Its history ({streaks!.total} logged {streaks!.total === 1 ? 'day' : 'days'}), the XP it earned and its badges
+                Its history ({historyDays} {quit ? 'free' : 'logged'} {historyDays === 1 ? 'day' : 'days'}), the XP it earned and its badges
                 go with it. This can't be undone.
               </p>
               <div className="modal-actions">

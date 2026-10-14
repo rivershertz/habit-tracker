@@ -1298,7 +1298,7 @@ input:focus-visible {
   color: var(--muted);
 }
 
-.add-modal label.field-label {
+.add-modal label[for='habit-name'] {
   margin-top: 0;
 }
 
@@ -1633,4 +1633,42 @@ input:focus-visible {
   --epr-search-border-color: var(--accent);
   --epr-category-label-text-color: var(--muted);
   border-radius: 16px;
+}
+
+.kind-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.kind-toggle button {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px;
+  text-align: left;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.kind-toggle b {
+  font-size: 14px;
+}
+
+.kind-toggle small {
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.kind-toggle button.on {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border-color: var(--accent);
+}
+
+.text-input[type='datetime-local'] {
+  color-scheme: dark;
 }

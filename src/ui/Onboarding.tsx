@@ -1,19 +1,15 @@
 import { motion } from 'motion/react';
 import { useState } from 'react';
+import { toDateTimeInput } from '../logic/dates';
 import { useStore } from '../store/store';
 import { burst, COLORS, haptic } from './fx';
 import { BookIcon, DumbbellIcon, WindIcon } from './icons';
 
-const pad = (n: number) => String(n).padStart(2, '0');
-const toInputValue = (ms: number) => {
-  const d = new Date(ms);
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
 
 export function Onboarding() {
   const { dispatch } = useStore();
   const [maxMs] = useState(() => Date.now());
-  const [value, setValue] = useState(() => toInputValue(maxMs));
+  const [value, setValue] = useState(() => toDateTimeInput(maxMs));
 
   const begin = (e: React.MouseEvent<HTMLButtonElement>) => {
     const parsed = new Date(value).getTime();
@@ -62,7 +58,7 @@ export function Onboarding() {
           id="quit"
           type="datetime-local"
           value={value}
-          max={toInputValue(maxMs)}
+          max={toDateTimeInput(maxMs)}
           onChange={(e) => setValue(e.target.value)}
         />
         <p className="hint">Your smoke-free counter starts from this moment. Leave it as-is to start fresh right now.</p>

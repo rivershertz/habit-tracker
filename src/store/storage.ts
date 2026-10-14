@@ -32,13 +32,15 @@ const HEX = /^#[0-9a-f]{6}$/i;
 /** A valid custom habit, or null. Built-ins are never read from storage — they always come from the defaults. */
 export function cleanHabit(v: unknown): Habit | null {
   if (!isObj(v)) return null;
-  const { id, name, icon, color, since } = v;
+  const { id, name, icon, color, since, kind } = v;
   if (typeof id !== 'string' || !CUSTOM_ID.test(id)) return null;
   if (typeof name !== 'string' || !name.trim()) return null;
   if (typeof icon !== 'string' || !icon.trim() || icon.length > 32) return null;
   if (typeof color !== 'string' || !HEX.test(color)) return null;
   if (typeof since !== 'string' || !DAY_KEY.test(since)) return null;
-  return { id, name: name.trim().slice(0, HABIT_NAME_MAX), icon: icon.trim(), color, since };
+  const habit: Habit = { id, name: name.trim().slice(0, HABIT_NAME_MAX), icon: icon.trim(), color, since };
+  if (kind === 'quit') habit.kind = 'quit';
+  return habit;
 }
 
 /** Validate + repair an untrusted blob (v1 is migrated). Returns null when it can't be a State at all. */
@@ -54,8 +56,12 @@ export function sanitize(raw: unknown): State | null {
       base.habits.push(habit);
     }
   }
+  const quitRuns = isObj(raw.quitRuns) ? raw.quitRuns : {};
   base.checkins = {};
-  for (const h of base.habits) base.checkins[h.id] = cleanDays(checkins[h.id]);
+  for (const h of base.habits) {
+    if (h.kind === 'quit') base.quitRuns[h.id] = cleanRuns(quitRuns[h.id]);
+    else base.checkins[h.id] = cleanDays(checkins[h.id]);
+  }
   base.smokingRuns = cleanRuns(raw.smokingRuns);
   base.seenAchievements = Array.isArray(raw.seenAchievements)
     ? raw.seenAchievements.filter((x): x is string => typeof x === 'string')

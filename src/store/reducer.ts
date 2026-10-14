@@ -1,6 +1,6 @@
 import { evaluateAchievements, type AchievementStatus } from '../logic/achievements';
-import { relapse, startQuit } from '../logic/smoking';
-import type { Habit, HabitId, State } from '../logic/types';
+import { closeAndOpenRuns, relapse, startQuit } from '../logic/smoking';
+import { isQuit, runsOf, type Habit, type HabitId, type State } from '../logic/types';
 import { levelForXp, totalXp, type LevelInfo } from '../logic/xp';
 import { cleanHabit, DAY_KEY } from './storage';
 
@@ -9,8 +9,11 @@ export type Action =
   | { type: 'relapse'; now: number }
   | { type: 'setCheckin'; habit: HabitId; day: string; on: boolean }
   | { type: 'markSeen'; ids: string[]; level: number }
-  | { type: 'addHabit'; habit: Habit }
-  | { type: 'removeHabit'; id: HabitId };
+  /** `quitStart` (epoch ms) is when the counter of a 'quit' habit starts */
+  | { type: 'addHabit'; habit: Habit; quitStart?: number }
+  | { type: 'removeHabit'; id: HabitId }
+  /** a slip on a custom quit habit: restarts its counter */
+  | { type: 'slip'; habit: HabitId; now: number };
 
 export function reduce(state: State, action: Action): State {
   switch (action.type) {
@@ -19,7 +22,8 @@ export function reduce(state: State, action: Action): State {
     case 'relapse':
       return relapse(state, action.now);
     case 'setCheckin': {
-      if (!DAY_KEY.test(action.day) || !state.habits.some((h) => h.id === action.habit)) return state;
+      const habit = state.habits.find((h) => h.id === action.habit);
+      if (!DAY_KEY.test(action.day) || !habit || isQuit(habit)) return state;
       const list = state.checkins[action.habit] ?? [];
       const has = list.includes(action.day);
       if (action.on === has) return state; // idempotent: same reference, nothing to celebrate
@@ -29,13 +33,25 @@ export function reduce(state: State, action: Action): State {
     case 'addHabit': {
       const habit = cleanHabit(action.habit);
       if (!habit || habit.builtIn || state.habits.some((h) => h.id === habit.id)) return state;
-      return { ...state, habits: [...state.habits, habit], checkins: { ...state.checkins, [habit.id]: [] } };
+      const habits = [...state.habits, habit];
+      if (isQuit(habit)) {
+        const start = action.quitStart;
+        if (start === undefined || !Number.isFinite(start)) return state;
+        return { ...state, habits, quitRuns: { ...state.quitRuns, [habit.id]: [{ start }] } };
+      }
+      return { ...state, habits, checkins: { ...state.checkins, [habit.id]: [] } };
     }
     case 'removeHabit': {
       const target = state.habits.find((h) => h.id === action.id);
       if (!target || target.builtIn) return state;
       const { [action.id]: _removed, ...checkins } = state.checkins;
-      return { ...state, habits: state.habits.filter((h) => h !== target), checkins };
+      const { [action.id]: _runs, ...quitRuns } = state.quitRuns;
+      return { ...state, habits: state.habits.filter((h) => h !== target), checkins, quitRuns };
+    }
+    case 'slip': {
+      const habit = state.habits.find((h) => h.id === action.habit);
+      if (!habit || !isQuit(habit)) return state;
+      return { ...state, quitRuns: { ...state.quitRuns, [habit.id]: closeAndOpenRuns(runsOf(state, habit.id), action.now) } };
     }
     case 'markSeen': {
       const seen = new Set([...state.seenAchievements, ...action.ids]);

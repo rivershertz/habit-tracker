@@ -1,7 +1,7 @@
 import { daysBetween } from './dates';
-import { bestRunDays } from './smoking';
+import { bestRunDays, bestRunDaysOf } from './smoking';
 import { computeStreaks, streakLengthAt } from './streaks';
-import { datesOf, type Habit, type State } from './types';
+import { datesOf, isQuit, runsOf, type Habit, type State } from './types';
 import { levelForXp, perfectDays, totalXp } from './xp';
 
 /** A habit id, or one of the fixed groups below. */
@@ -52,7 +52,10 @@ function longestRun(sorted: string[]): number {
   return best;
 }
 
-const allDays = (s: State) => unique(s.habits.flatMap((h) => datesOf(s, h.id)));
+/** Habits you tap in daily — the ones with check-ins and streaks. */
+const checkHabits = (s: State) => s.habits.filter((h) => !isQuit(h));
+
+const allDays = (s: State) => unique(checkHabits(s).flatMap((h) => datesOf(s, h.id)));
 
 function longestGapReturn({ state }: Ctx): number {
   const all = allDays(state);
@@ -64,7 +67,7 @@ function longestGapReturn({ state }: Ctx): number {
 /** Most different habits checked in on a single day. */
 function mostHabitsInADay({ state }: Ctx): number {
   const count = new Map<string, number>();
-  for (const h of state.habits) for (const d of new Set(datesOf(state, h.id))) count.set(d, (count.get(d) ?? 0) + 1);
+  for (const h of checkHabits(state)) for (const d of new Set(datesOf(state, h.id))) count.set(d, (count.get(d) ?? 0) + 1);
   return Math.max(0, ...count.values());
 }
 
@@ -72,7 +75,7 @@ function mostHabitsInADay({ state }: Ctx): number {
 function sharedStreak({ state }: Ctx): number {
   let best = 0;
   for (const d of allDays(state)) {
-    const active = state.habits.filter((h) => h.since <= d);
+    const active = checkHabits(state).filter((h) => h.since <= d);
     if (active.length < 2) continue;
     best = Math.max(best, Math.min(...active.map((h) => streakLengthAt(datesOf(state, h.id), d))));
   }
@@ -121,7 +124,29 @@ const TOTAL_STEPS: [number, Tier, string][] = [
   [1000, 'legendary', '🗿'],
 ];
 
+const QUIT_STEPS: [number, Tier, string, string][] = [
+  [1, 'common', 'Day One', '🌱'],
+  [7, 'rare', 'Clean Week', '🌿'],
+  [30, 'epic', 'Free Month', '🦋'],
+  [100, 'legendary', 'Hundred Free', '🏔️'],
+  [365, 'mythic', 'Free for a Year', '👑'],
+];
+
+function quitDefs(h: Habit): AchievementDef[] {
+  return QUIT_STEPS.map(([days, tier, title, icon]) => ({
+    id: `${h.id}-free-${days}d`,
+    group: h.id,
+    tier,
+    title,
+    desc: `${h.name}: ${days === 1 ? 'a full day' : `${days} days`} without a slip`,
+    icon,
+    value: ({ state, now }) => bestRunDaysOf(runsOf(state, h.id), now),
+    target: days,
+  }));
+}
+
 function habitDefs(h: Habit): AchievementDef[] {
+  if (isQuit(h)) return quitDefs(h);
   const n = HABIT_NAMES[h.id] ?? genericNames(h);
   const best = ({ state }: Ctx) => computeStreaks(datesOf(state, h.id), '9999-12-31').best;
   const total = ({ state }: Ctx) => new Set(datesOf(state, h.id)).size;
@@ -250,7 +275,7 @@ const SPECIAL_DEFS: AchievementDef[] = [
     group: SPECIAL_GROUP,
     tier: 'epic',
     title: 'Grand Slam',
-    desc: 'Hold a 7-day streak on every habit at once',
+    desc: 'Hold a 7-day streak on every daily habit at once',
     icon: '🎯',
     value: sharedStreak,
     target: 7,
@@ -260,7 +285,7 @@ const SPECIAL_DEFS: AchievementDef[] = [
     group: SPECIAL_GROUP,
     tier: 'legendary',
     title: 'Pantheon',
-    desc: 'Hold a 30-day streak on every habit at once',
+    desc: 'Hold a 30-day streak on every daily habit at once',
     icon: '🏛️',
     value: sharedStreak,
     target: 30,

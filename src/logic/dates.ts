@@ -26,3 +26,9 @@ export function daysBetween(a: string, b: string): number {
   const [by, bm, bd] = b.split('-').map(Number);
   return Math.round((Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)) / 86_400_000);
 }
+
+/** Local 'YYYY-MM-DDTHH:mm' for a datetime-local input. */
+export function toDateTimeInput(ms: number): string {
+  const d = new Date(ms);
+  return `${toDateKey(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}

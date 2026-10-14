@@ -1,6 +1,6 @@
-import { smokeFreeBlockDates } from './smoking';
+import { freeBlockDates, smokeFreeBlockDates } from './smoking';
 import { streakLengthAt } from './streaks';
-import { datesOf, type HabitId, type State } from './types';
+import { datesOf, isQuit, runsOf, type HabitId, type State } from './types';
 
 export const XP_CHECKIN = 10;
 export const XP_STREAK_BONUS_CAP = 10;
@@ -23,9 +23,13 @@ function habitXp(dates: string[]): number {
   return sum;
 }
 
-/** Smoke-free days on which every habit that existed that day was checked in. */
+/** Days a habit "succeeded": check-ins, or completed free days for a quit habit. */
+const goodDays = (state: State, id: HabitId, quit: boolean, now: number): string[] =>
+  quit ? freeBlockDates(runsOf(state, id), now) : datesOf(state, id);
+
+/** Smoke-free days on which every habit that existed that day was done. */
 export function perfectDays(state: State, now: number): string[] {
-  const sets = state.habits.map((h) => ({ since: h.since, days: new Set(datesOf(state, h.id)) }));
+  const sets = state.habits.map((h) => ({ since: h.since, days: new Set(goodDays(state, h.id, isQuit(h), now)) }));
   return smokeFreeBlockDates(state, now).filter((d) => {
     const active = sets.filter((h) => h.since <= d);
     return active.length > 0 && active.every((h) => h.days.has(d));
@@ -34,7 +38,9 @@ export function perfectDays(state: State, now: number): string[] {
 
 export function xpBreakdown(state: State, now: number): XpBreakdown {
   const habits: Record<HabitId, number> = {};
-  for (const h of state.habits) habits[h.id] = habitXp(datesOf(state, h.id));
+  for (const h of state.habits) {
+    habits[h.id] = isQuit(h) ? freeBlockDates(runsOf(state, h.id), now).length * XP_SMOKE_DAY : habitXp(datesOf(state, h.id));
+  }
   return {
     habits,
     smoke: smokeFreeBlockDates(state, now).length * XP_SMOKE_DAY,

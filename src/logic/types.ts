@@ -1,5 +1,8 @@
 export type HabitId = string;
 
+/** 'check' = tap in every day; 'quit' = counts up on its own until you slip */
+export type HabitKind = 'check' | 'quit';
+
 export interface Habit {
   id: HabitId;
   name: string;
@@ -8,8 +11,12 @@ export interface Habit {
   color: string;
   /** 'YYYY-MM-DD' the habit was added; it only counts toward perfect days from then on */
   since: string;
+  /** absent = 'check' */
+  kind?: HabitKind;
   builtIn?: boolean;
 }
+
+export const isQuit = (h: Habit) => h.kind === 'quit';
 
 export interface SmokingRun {
   /** epoch ms */
@@ -24,6 +31,8 @@ export interface State {
   habits: Habit[];
   /** local 'YYYY-MM-DD' keys per habit id, unique and sorted ascending */
   checkins: Record<HabitId, string[]>;
+  /** runs of each custom 'quit' habit (smoking keeps its own `smokingRuns`) */
+  quitRuns: Record<HabitId, SmokingRun[]>;
   seenAchievements: string[];
   seenLevel: number;
 }
@@ -41,12 +50,16 @@ export const emptyState = (): State => ({
   smokingRuns: [],
   habits: defaultHabits(),
   checkins: { workout: [], reading: [] },
+  quitRuns: {},
   seenAchievements: [],
   seenLevel: 1,
 });
 
 /** Check-ins of a habit (empty for unknown ids). */
 export const datesOf = (s: State, id: HabitId): string[] => s.checkins[id] ?? [];
+
+/** Runs of a quit habit (empty for unknown ids). */
+export const runsOf = (s: State, id: HabitId): SmokingRun[] => s.quitRuns[id] ?? [];
 
 export const HABIT_COLORS = ['#4da3ff', '#ff5fa2', '#f5d90a', '#2ee6e6', '#ff7a45', '#9b7bff', '#7bdc4f', '#ff6b6b'];
 

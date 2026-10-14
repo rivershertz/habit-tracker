@@ -2,7 +2,8 @@
 
 A dark, gamified habit tracker. Level up by showing up.
 
-Tracks **days smoke-free**, **workout days**, **reading days** and any habits you add yourself (name, emoji, color)
+Tracks **days smoke-free**, **workout days**, **reading days** and any habits you add yourself (name, emoji, color,
+and type: a **daily check-in** you tap in, or a **quit counter** that counts up on its own until you slip)
 — with XP, levels, ranks, streaks, a calendar heatmap, 50+ achievements in five rarity tiers (Common → Rare → Epic →
 Legendary → Mythic), confetti and plenty of micro-interactions.
 
@@ -24,7 +25,8 @@ pnpm build      # type-check + production build into dist/
 - `src/store` — reducer, `localStorage` persistence (validates and repairs whatever it reads), React provider.
 - `src/ui` — screens (Today, Journey, habit detail, onboarding), celebrations and FX.
 
-XP: check-in = 10 + streak bonus (max +10); smoke-free day = 15; perfect day (smoke-free + every habit) = +20.
+XP: check-in = 10 + streak bonus (max +10); smoke-free / quit-counter free day = 15; perfect day (every habit done
+that day — checked in, or a full free day) = +20.
 A custom habit only joins the perfect-day requirement from the day it was added. Removing a custom habit deletes its
 history; Workout and Reading are built in and can't be removed.
 
