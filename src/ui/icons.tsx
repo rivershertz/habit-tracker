@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { Habit } from '../logic/types';
 
 interface IconProps {
   size?: number;
@@ -51,3 +52,16 @@ export const LockIcon = make(
   </>,
 );
 export const UndoIcon = make(<path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" />);
+export const PlusIcon = make(<path d="M12 5v14M5 12h14" />);
+export const TrashIcon = make(<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6" />);
+
+/** The built-ins keep their line icons; custom habits show their emoji. */
+export function HabitGlyph({ habit, size = 20 }: { habit: Habit; size?: number }) {
+  if (habit.id === 'workout') return <DumbbellIcon size={size} />;
+  if (habit.id === 'reading') return <BookIcon size={size} />;
+  return (
+    <span className="habit-emoji" style={{ fontSize: size }}>
+      {habit.icon}
+    </span>
+  );
+}

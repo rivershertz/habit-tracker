@@ -4,28 +4,40 @@ import type { AchievementStatus } from '../logic/achievements';
 import type { LevelInfo } from '../logic/xp';
 import { pendingCelebrations } from '../store/reducer';
 import { useStore } from '../store/store';
-import { bigBurst, COLORS, haptic, onXp, sparkle, type XpEvent } from './fx';
+import type { Habit } from '../logic/types';
+import { bigBurst, COLORS, epicBurst, groupColor, haptic, isHeroTier, onXp, sparkle, TIER_META, type XpEvent } from './fx';
 
 type Item =
   | { kind: 'level'; key: string; info: LevelInfo }
+  | { kind: 'hero'; key: string; a: AchievementStatus }
   | { kind: 'ach'; key: string; a: AchievementStatus }
   | { kind: 'multi'; key: string; list: AchievementStatus[] };
 
-const GROUP_COLOR = { workout: COLORS.workout, reading: COLORS.reading, smoke: COLORS.smoke, special: COLORS.xp };
+const isOverlay = (i: Item): i is Extract<Item, { kind: 'level' | 'hero' }> => i.kind === 'level' || i.kind === 'hero';
 
 /** More than this many at once (e.g. backfilling old days) collapses into one toast. */
 const MAX_INDIVIDUAL_TOASTS = 2;
 
-function toastOf(item: Exclude<Item, { kind: 'level' }>) {
+function toastOf(item: Extract<Item, { kind: 'ach' | 'multi' }>, habits: Habit[]) {
   if (item.kind === 'ach') {
-    return { icon: item.a.icon, title: item.a.title, desc: item.a.desc, color: GROUP_COLOR[item.a.group] };
+    const { tier } = item.a;
+    return {
+      icon: item.a.icon,
+      title: item.a.title,
+      desc: item.a.desc,
+      label: tier === 'common' ? 'Achievement unlocked' : `${TIER_META[tier].label} achievement unlocked`,
+      color: tier === 'common' ? groupColor(item.a.group, habits) : TIER_META[tier].color,
+      epic: tier === 'epic',
+    };
   }
   const names = item.list.slice(0, 3).map((a) => a.title).join(', ');
   return {
     icon: '🏆',
     title: `${item.list.length} achievements unlocked`,
     desc: item.list.length > 3 ? `${names} and more` : names,
+    label: 'Achievements unlocked',
     color: COLORS.xp,
+    epic: item.list.some((a) => a.tier === 'epic'),
   };
 }
 
@@ -72,10 +84,14 @@ export function Celebrations() {
     if (!p.level && p.achievements.length === 0) return;
     const items: Item[] = [];
     if (p.level) items.push({ kind: 'level', key: `level-${p.level.level}`, info: p.level });
-    if (p.achievements.length > MAX_INDIVIDUAL_TOASTS) {
-      items.push({ kind: 'multi', key: `multi-${p.achievements.map((a) => a.id).join('+')}`, list: p.achievements });
+    // legendary and mythic badges always get their own full-screen moment
+    const heroes = p.achievements.filter((a) => isHeroTier(a.tier));
+    const rest = p.achievements.filter((a) => !isHeroTier(a.tier));
+    for (const a of heroes) items.push({ kind: 'hero', key: a.id, a });
+    if (rest.length > MAX_INDIVIDUAL_TOASTS) {
+      items.push({ kind: 'multi', key: `multi-${rest.map((a) => a.id).join('+')}`, list: rest });
     } else {
-      for (const a of p.achievements) items.push({ kind: 'ach', key: a.id, a });
+      for (const a of rest) items.push({ kind: 'ach', key: a.id, a });
     }
     dispatch({ type: 'markSeen', ids: p.achievements.map((a) => a.id), level: p.level?.level ?? 0 });
     const fresh = items.filter((i) => !seen.current.has(i.key));
@@ -94,6 +110,7 @@ export function Celebrations() {
 
   const visible = current && shownKey === current.key ? current : null;
   const dismiss = () => setQueue((q) => q.slice(1));
+  const toast = visible && !isOverlay(visible) ? toastOf(visible, state.habits) : null;
 
   useEffect(() => {
     if (!visible) return;
@@ -102,8 +119,20 @@ export function Celebrations() {
       haptic([20, 60, 20, 60, 40]);
       return;
     }
-    sparkle(toastOf(visible).color);
-    haptic(20);
+    if (visible.kind === 'hero') {
+      bigBurst();
+      epicBurst(TIER_META[visible.a.tier].color);
+      haptic([30, 60, 30, 60, 30, 60, 80]);
+      return;
+    }
+    if (!toast) return;
+    if (toast.epic) {
+      epicBurst(toast.color);
+      haptic([20, 50, 20, 50, 40]);
+    } else {
+      sparkle(toast.color);
+      haptic(20);
+    }
     const t = setTimeout(dismiss, 4200);
     return () => clearTimeout(t);
   }, [visible]);
@@ -149,11 +178,51 @@ export function Celebrations() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {visible && visible.kind !== 'level' && (
+        {visible?.kind === 'hero' && (
+          <motion.div
+            key={visible.key}
+            className={`levelup hero-unlock tier-${visible.a.tier}`}
+            style={{ ['--tier' as string]: TIER_META[visible.a.tier].color }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            role="dialog"
+            aria-label={`${TIER_META[visible.a.tier].label} achievement unlocked`}
+          >
+            <motion.div
+              className="levelup-body"
+              initial={{ scale: 0.6, y: 30, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 240, damping: 15, delay: 0.1 }}
+            >
+              <motion.small initial={{ letterSpacing: '0.6em', opacity: 0 }} animate={{ letterSpacing: '0.3em', opacity: 1 }} transition={{ delay: 0.25 }}>
+                {TIER_META[visible.a.tier].label.toUpperCase()} ACHIEVEMENT
+              </motion.small>
+              <motion.div
+                className="hero-medal"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 12, delay: 0.3 }}
+              >
+                <span className="hero-rays" />
+                <span className="hero-icon">{visible.a.icon}</span>
+              </motion.div>
+              <h2>{visible.a.title}</h2>
+              <p>{visible.a.desc}</p>
+              <motion.button className="btn primary hero-btn" whileTap={{ scale: 0.94 }} onClick={dismiss}>
+                Claim it
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {visible && toast && (
           <motion.button
             key={visible.key}
-            className="toast"
-            style={{ ['--accent' as string]: toastOf(visible).color }}
+            className={`toast${toast.epic ? ' epic' : ''}`}
+            style={{ ['--accent' as string]: toast.color }}
             initial={{ y: -90, opacity: 0, scale: 0.9 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: -90, opacity: 0 }}
@@ -161,11 +230,11 @@ export function Celebrations() {
             onClick={dismiss}
           >
             <span className="toast-shine" />
-            <span className="toast-icon">{toastOf(visible).icon}</span>
+            <span className="toast-icon">{toast.icon}</span>
             <span className="toast-text">
-              <small>Achievement unlocked</small>
-              <b>{toastOf(visible).title}</b>
-              <em>{toastOf(visible).desc}</em>
+              <small>{toast.label}</small>
+              <b>{toast.title}</b>
+              <em>{toast.desc}</em>
             </span>
           </motion.button>
         )}

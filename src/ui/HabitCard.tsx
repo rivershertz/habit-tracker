@@ -1,30 +1,26 @@
 import { AnimatePresence, motion } from 'motion/react';
-import type { ComponentType } from 'react';
 import { todayKey } from '../logic/dates';
 import { computeStreaks } from '../logic/streaks';
-import type { HabitId } from '../logic/types';
+import type { Habit } from '../logic/types';
 import { useStore } from '../store/store';
 import { originOf, useActions } from './actions';
-import { COLORS } from './fx';
-import { CheckIcon, FlameIcon, UndoIcon } from './icons';
+import { CheckIcon, FlameIcon, HabitGlyph, UndoIcon } from './icons';
 import { Ring } from './Ring';
 import { CountUp } from './CountUp';
 
-interface Props {
-  habit: HabitId;
-  title: string;
-  doneLabel: string;
-  todoLabel: string;
-  Icon: ComponentType<{ size?: number; stroke?: number }>;
-  onOpen: () => void;
-}
+const LABELS: Record<string, { todo: string; done: string }> = {
+  workout: { todo: 'Get your daily workout in', done: 'Crushed it today' },
+  reading: { todo: 'Read a few pages', done: 'Pages turned today' },
+};
+const DEFAULT_LABELS = { todo: 'Check in today', done: 'Done for today' };
 
-export function HabitCard({ habit, title, doneLabel, todoLabel, Icon, onOpen }: Props) {
+export function HabitCard({ habit: h, onOpen }: { habit: Habit; onOpen: () => void }) {
   const { state, now } = useStore();
   const { check, uncheck } = useActions();
-  const color = COLORS[habit];
+  const { id: habit, name: title, color } = h;
+  const { todo: todoLabel, done: doneLabel } = LABELS[habit] ?? DEFAULT_LABELS;
   const today = todayKey(now);
-  const dates = state.checkins[habit];
+  const dates = state.checkins[habit] ?? [];
   const done = dates.includes(today);
   const { current, best } = computeStreaks(dates, today);
   const atRisk = !done && current > 0;
@@ -40,7 +36,7 @@ export function HabitCard({ habit, title, doneLabel, todoLabel, Icon, onOpen }: 
       <button className="card-hit" onClick={onOpen} aria-label={`Open ${title} details`} />
       <div className="habit-main">
         <div className="habit-icon">
-          <Icon size={20} />
+          <HabitGlyph habit={h} size={20} />
         </div>
         <div className="habit-text">
           <h3>{title}</h3>

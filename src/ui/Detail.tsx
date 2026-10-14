@@ -1,22 +1,15 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useMemo, useState, type ComponentType } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { todayKey } from '../logic/dates';
 import { bestRunDays, currentRun, smokeFreeBlockDates, smokeFreeDays } from '../logic/smoking';
 import { computeStreaks } from '../logic/streaks';
-import type { HabitId } from '../logic/types';
 import { useStore } from '../store/store';
 import { originOf, useActions } from './actions';
 import { CountUp } from './CountUp';
 import { COLORS } from './fx';
-import { BookIcon, ChevronLeftIcon, DumbbellIcon, WindIcon } from './icons';
+import { ChevronLeftIcon, HabitGlyph, TrashIcon, WindIcon } from './icons';
 import { Heatmap } from './Heatmap';
 import type { DetailId } from './Today';
-
-const META: Record<DetailId, { title: string; color: string; Icon: ComponentType<{ size?: number }> }> = {
-  smoke: { title: 'Smoke-free', color: COLORS.smoke, Icon: WindIcon },
-  workout: { title: 'Workout', color: COLORS.workout, Icon: DumbbellIcon },
-  reading: { title: 'Reading', color: COLORS.reading, Icon: BookIcon },
-};
 
 const fmtDay = (ts: number) => new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
@@ -33,30 +26,39 @@ function Stat({ label, value, unit }: { label: string; value: number; unit?: str
 }
 
 export function Detail({ id, onClose }: { id: DetailId; onClose: () => void }) {
-  const { state, now } = useStore();
+  const { state, now, dispatch } = useStore();
   const { check, uncheck, smoked } = useActions();
-  const { title, color, Icon } = META[id];
+  const isSmoke = id === 'smoke';
+  const habitObj = isSmoke ? null : state.habits.find((h) => h.id === id) ?? null;
+  const title = habitObj?.name ?? 'Smoke-free';
+  const color = habitObj?.color ?? COLORS.smoke;
+  const glyph: ReactNode = habitObj ? <HabitGlyph habit={habitObj} size={16} /> : <WindIcon size={16} />;
   const today = todayKey(now);
   const [confirm, setConfirm] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && (confirm ? setConfirm(false) : onClose());
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (confirm) setConfirm(false);
+      else if (confirmRemove) setConfirmRemove(false);
+      else onClose();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, confirm]);
+  }, [onClose, confirm, confirmRemove]);
 
-  const isSmoke = id === 'smoke';
-  const habit: HabitId | null = isSmoke ? null : id;
+  const habit = habitObj?.id ?? null;
 
   const marked = useMemo(
-    () => new Set(isSmoke ? smokeFreeBlockDates(state, now) : state.checkins[id]),
+    () => new Set(isSmoke ? smokeFreeBlockDates(state, now) : state.checkins[id] ?? []),
     [isSmoke, state, now, id],
   );
 
   const run = currentRun(state, now);
   const bestRun = bestRunDays(state, now);
-  const streaks = habit ? computeStreaks(state.checkins[habit], today) : null;
+  const streaks = habit ? computeStreaks(state.checkins[habit] ?? [], today) : null;
   const restarts = state.smokingRuns.filter((r) => r.end !== undefined).length;
   const runs = [...state.smokingRuns].reverse();
 
@@ -64,6 +66,8 @@ export function Detail({ id, onClose }: { id: DetailId; onClose: () => void }) {
     ? (day: string, el: HTMLElement) =>
         marked.has(day) ? uncheck(habit, day) : check(habit, day, originOf(el), day === today)
     : undefined;
+
+  if (!isSmoke && !habitObj) return null; // the habit was just removed
 
   return (
     <motion.div
@@ -82,9 +86,7 @@ export function Detail({ id, onClose }: { id: DetailId; onClose: () => void }) {
             <ChevronLeftIcon size={20} />
           </button>
           <div className="sheet-title">
-            <span className="habit-icon sm">
-              <Icon size={16} />
-            </span>
+            <span className="habit-icon sm">{glyph}</span>
             <h2>{title}</h2>
           </div>
           <span style={{ width: 40 }} />
@@ -119,6 +121,12 @@ export function Detail({ id, onClose }: { id: DetailId; onClose: () => void }) {
           <Heatmap today={today} marked={marked} color={color} onToggle={onToggle} />
           {!isSmoke && <p className="hint">Tap any day to log or undo it.</p>}
         </section>
+
+        {habitObj && !habitObj.builtIn && (
+          <button className="slip-btn remove-btn" onClick={() => setConfirmRemove(true)}>
+            <TrashIcon size={16} /> Remove habit
+          </button>
+        )}
 
         {isSmoke && (
           <>
@@ -177,6 +185,38 @@ export function Detail({ id, onClose }: { id: DetailId; onClose: () => void }) {
                   }}
                 >
                   Reset counter
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+        {confirmRemove && habitObj && (
+          <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setConfirmRemove(false)}>
+            <motion.div
+              className="modal"
+              initial={{ y: 40, opacity: 0, scale: 0.96 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 360, damping: 28 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3>Remove {habitObj.name}?</h3>
+              <p>
+                Its history ({streaks!.total} logged {streaks!.total === 1 ? 'day' : 'days'}), the XP it earned and its badges
+                go with it. This can't be undone.
+              </p>
+              <div className="modal-actions">
+                <button className="btn ghost" onClick={() => setConfirmRemove(false)}>
+                  Keep it
+                </button>
+                <button
+                  className="btn danger"
+                  onClick={() => {
+                    onClose();
+                    dispatch({ type: 'removeHabit', id: habitObj.id });
+                  }}
+                >
+                  Remove
                 </button>
               </div>
             </motion.div>

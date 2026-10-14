@@ -26,7 +26,7 @@ export function useActions() {
       if (next === state) return; // double-tap: nothing changes, nothing celebrates
       const gained = totalXp(next, now) - totalXp(state, now);
       dispatch(action);
-      const color = COLORS[habit];
+      const color = state.habits.find((h) => h.id === habit)?.color ?? COLORS.xp;
       if (big) burst(origin.x, origin.y, color);
       haptic(big ? [12, 40, 18] : 10);
       if (gained > 0) emitXp({ x: origin.x, y: origin.y, amount: gained, color });

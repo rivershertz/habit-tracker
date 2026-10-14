@@ -5,10 +5,11 @@ import { perfectDays, XP_PERFECT } from '../logic/xp';
 import { useStore } from '../store/store';
 import { COLORS } from './fx';
 import { HabitCard } from './HabitCard';
-import { BookIcon, DumbbellIcon } from './icons';
+import { PlusIcon } from './icons';
 import { SmokeCard } from './SmokeCard';
 
-export type DetailId = 'smoke' | 'workout' | 'reading';
+/** 'smoke' or a habit id */
+export type DetailId = string;
 
 const greeting = (hour: number) =>
   hour < 5 ? 'Still up' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -19,18 +20,15 @@ const item = {
   show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 260, damping: 24 } },
 };
 
-export function Today({ onOpen }: { onOpen: (d: DetailId) => void }) {
+export function Today({ onOpen, onAdd }: { onOpen: (d: DetailId) => void; onAdd: () => void }) {
   const { state, now } = useStore();
   const today = todayKey(now);
-  const wDone = state.checkins.workout.includes(today);
-  const rDone = state.checkins.reading.includes(today);
-  const sDone = currentRun(state, now).active;
   const quests = [
-    { id: 'smoke', done: sDone, color: COLORS.smoke },
-    { id: 'workout', done: wDone, color: COLORS.workout },
-    { id: 'reading', done: rDone, color: COLORS.reading },
+    { id: 'smoke', done: currentRun(state, now).active, color: COLORS.smoke },
+    ...state.habits.map((h) => ({ id: h.id, done: (state.checkins[h.id] ?? []).includes(today), color: h.color })),
   ];
   const doneCount = quests.filter((q) => q.done).length;
+  const allDone = doneCount === quests.length;
   // the bonus only exists once the smoke-free day for `today` has completed, so say so honestly
   const perfectBonusCounted = perfectDays(state, now).includes(today);
   const date = fromDateKey(today).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
@@ -42,7 +40,7 @@ export function Today({ onOpen }: { onOpen: (d: DetailId) => void }) {
           <h1>{greeting(new Date(now).getHours())}</h1>
           <p>{date}</p>
         </div>
-        <div className="quests" aria-label={`${doneCount} of 3 daily goals done`}>
+        <div className="quests" aria-label={`${doneCount} of ${quests.length} daily goals done`}>
           {quests.map((q) => (
             <motion.i
               key={q.id}
@@ -52,39 +50,30 @@ export function Today({ onOpen }: { onOpen: (d: DetailId) => void }) {
               transition={{ duration: 0.4 }}
             />
           ))}
-          <span>{doneCount}/3</span>
+          <span>
+            {doneCount}/{quests.length}
+          </span>
         </div>
       </motion.div>
 
       <motion.div variants={item}>
         <SmokeCard onOpen={() => onOpen('smoke')} />
       </motion.div>
-      <motion.div variants={item}>
-        <HabitCard
-          habit="workout"
-          title="Workout"
-          todoLabel="Get your daily workout in"
-          doneLabel="Crushed it today"
-          Icon={DumbbellIcon}
-          onOpen={() => onOpen('workout')}
-        />
-      </motion.div>
-      <motion.div variants={item}>
-        <HabitCard
-          habit="reading"
-          title="Reading"
-          todoLabel="Read a few pages"
-          doneLabel="Pages turned today"
-          Icon={BookIcon}
-          onOpen={() => onOpen('reading')}
-        />
-      </motion.div>
+      {state.habits.map((h) => (
+        <motion.div key={h.id} variants={item}>
+          <HabitCard habit={h} onOpen={() => onOpen(h.id)} />
+        </motion.div>
+      ))}
 
-      {doneCount === 3 && (
+      <motion.button className="add-habit" variants={item} whileTap={{ scale: 0.97 }} onClick={onAdd}>
+        <PlusIcon size={18} /> New habit
+      </motion.button>
+
+      {allDone && (
         <motion.p className="perfect" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
           {perfectBonusCounted
             ? `⭐ Perfect day — +${XP_PERFECT} XP bonus earned`
-            : `⭐ All three goals hit — your +${XP_PERFECT} XP Perfect Day bonus lands once today's smoke-free day completes`}
+            : `⭐ Every goal hit — your +${XP_PERFECT} XP Perfect Day bonus lands once today's smoke-free day completes`}
         </motion.p>
       )}
     </motion.div>

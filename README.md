@@ -2,8 +2,9 @@
 
 A dark, gamified habit tracker. Level up by showing up.
 
-Tracks three habits — **days smoke-free**, **workout days**, **reading days** — with XP, levels, ranks,
-streaks, a calendar heatmap, achievements, confetti and plenty of micro-interactions.
+Tracks **days smoke-free**, **workout days**, **reading days** and any habits you add yourself (name, emoji, color)
+— with XP, levels, ranks, streaks, a calendar heatmap, 50+ achievements in five rarity tiers (Common → Rare → Epic →
+Legendary → Mythic), confetti and plenty of micro-interactions.
 
 Everything lives in your browser's `localStorage` (key `ascend:v1`). There is no backend and no account.
 
@@ -23,7 +24,11 @@ pnpm build      # type-check + production build into dist/
 - `src/store` — reducer, `localStorage` persistence (validates and repairs whatever it reads), React provider.
 - `src/ui` — screens (Today, Journey, habit detail, onboarding), celebrations and FX.
 
-XP: check-in = 10 + streak bonus (max +10); smoke-free day = 15; perfect day (all three) = +20.
+XP: check-in = 10 + streak bonus (max +10); smoke-free day = 15; perfect day (smoke-free + every habit) = +20.
+A custom habit only joins the perfect-day requirement from the day it was added. Removing a custom habit deletes its
+history; Workout and Reading are built in and can't be removed.
+
+Saved data is schema `version: 2`; version 1 data (before custom habits) is migrated on load.
 Level *n* needs `round(40·(n−1)^1.6)` total XP.
 
 ## Deploy (GitHub Pages)

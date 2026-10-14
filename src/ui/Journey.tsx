@@ -1,17 +1,11 @@
 import { motion } from 'motion/react';
-import { evaluateAchievements, type AchievementGroup } from '../logic/achievements';
+import { useState } from 'react';
+import { evaluateAchievements, MASTERY_GROUP, SMOKE_GROUP, SPECIAL_GROUP, TIERS, type Tier } from '../logic/achievements';
 import { levelForXp, totalXp, xpBreakdown } from '../logic/xp';
 import { useStore } from '../store/store';
 import { CountUp } from './CountUp';
-import { COLORS } from './fx';
+import { COLORS, groupColor, TIER_META } from './fx';
 import { Ring } from './Ring';
-
-const GROUPS: { id: AchievementGroup; label: string; color: string }[] = [
-  { id: 'smoke', label: 'Smoke-free', color: COLORS.smoke },
-  { id: 'workout', label: 'Workout', color: COLORS.workout },
-  { id: 'reading', label: 'Reading', color: COLORS.reading },
-  { id: 'special', label: 'Special', color: COLORS.xp },
-];
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
 const item = {
@@ -25,12 +19,19 @@ export function Journey() {
   const info = levelForXp(xp);
   const b = xpBreakdown(state, now);
   const achievements = evaluateAchievements(state, now);
+  const [tier, setTier] = useState<Tier | null>(null);
   const sources = [
     { label: 'Smoke-free days', value: b.smoke, color: COLORS.smoke },
-    { label: 'Workouts', value: b.workout, color: COLORS.workout },
-    { label: 'Reading', value: b.reading, color: COLORS.reading },
+    ...state.habits.map((h) => ({ label: h.name, value: b.habits[h.id] ?? 0, color: h.color })),
     { label: 'Perfect days', value: b.perfect, color: COLORS.xp },
   ];
+  const groups = [
+    { id: SMOKE_GROUP, label: 'Smoke-free' },
+    ...state.habits.map((h) => ({ id: h.id, label: h.name })),
+    { id: SPECIAL_GROUP, label: 'Feats' },
+    { id: MASTERY_GROUP, label: 'Mastery' },
+  ];
+  const unlocked = achievements.filter((a) => a.unlocked).length;
   const max = Math.max(1, ...sources.map((s) => s.value));
 
   return (
@@ -73,27 +74,62 @@ export function Journey() {
         </ul>
       </motion.section>
 
-      {GROUPS.map((g) => {
-        const list = achievements.filter((a) => a.group === g.id);
-        const done = list.filter((a) => a.unlocked).length;
+      <motion.section className="card trophy-case" variants={item}>
+        <h4 className="section-title row">
+          <span>Trophy case</span>
+          <span className="muted">
+            {unlocked}/{achievements.length}
+          </span>
+        </h4>
+        <div className="tiers" role="group" aria-label="Filter badges by rarity">
+          {TIERS.map((t) => {
+            const list = achievements.filter((a) => a.tier === t);
+            const got = list.filter((a) => a.unlocked).length;
+            return (
+              <motion.button
+                key={t}
+                className={`tier-chip tier-${t}${tier === t ? ' on' : ''}`}
+                style={{ ['--tier' as string]: TIER_META[t].color }}
+                aria-pressed={tier === t}
+                whileTap={{ scale: 0.92 }}
+                onClick={() => setTier(tier === t ? null : t)}
+              >
+                <b>
+                  {got}
+                  <small>/{list.length}</small>
+                </b>
+                <span>{TIER_META[t].label}</span>
+              </motion.button>
+            );
+          })}
+        </div>
+      </motion.section>
+
+      {groups.map((g) => {
+        const color = groupColor(g.id, state.habits);
+        const all = achievements.filter((a) => a.group === g.id);
+        const list = tier ? all.filter((a) => a.tier === tier) : all;
+        if (list.length === 0) return null;
+        const done = all.filter((a) => a.unlocked).length;
         return (
           <motion.section key={g.id} variants={item}>
             <h4 className="section-title row">
-              <span style={{ color: g.color }}>{g.label}</span>
+              <span style={{ color }}>{g.label}</span>
               <span className="muted">
-                {done}/{list.length}
+                {done}/{all.length}
               </span>
             </h4>
             <div className="badges">
               {list.map((a) => (
                 <motion.div
                   key={a.id}
-                  className={`badge${a.unlocked ? ' unlocked' : ''}`}
-                  style={{ ['--accent' as string]: g.color }}
+                  className={`badge tier-${a.tier}${a.unlocked ? ' unlocked' : ''}`}
+                  style={{ ['--accent' as string]: color, ['--tier' as string]: TIER_META[a.tier].color }}
                   whileHover={{ y: -3 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <Ring size={56} stroke={4} progress={a.progress} color={g.color} glow={a.unlocked}>
+                  <span className="tier-tag">{TIER_META[a.tier].label}</span>
+                  <Ring size={56} stroke={4} progress={a.progress} color={a.unlocked ? TIER_META[a.tier].color : color} glow={a.unlocked}>
                     <span className="badge-icon">{a.icon}</span>
                   </Ring>
                   <b>{a.title}</b>

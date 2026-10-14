@@ -49,6 +49,30 @@ describe('storage', () => {
     expect(s.seenLevel).toBe(1);
   });
 
+  it('migrates v1 data (no habits list) to v2 with the built-ins', () => {
+    const raw = { version: 1, smokingRuns: [{ start: 5 }], checkins: { workout: ['2026-10-01'], reading: [] }, seenAchievements: ['first-workout'], seenLevel: 2 };
+    const s = loadState(memory({ [KEY]: JSON.stringify(raw) }))!;
+    expect(s.version).toBe(2);
+    expect(s.habits.map((h) => h.id)).toEqual(['workout', 'reading']);
+    expect(s.checkins.workout).toEqual(['2026-10-01']);
+    expect(s.seenAchievements).toEqual(['first-workout']);
+  });
+
+  it('round-trips custom habits and drops invalid ones', () => {
+    const good = { id: 'h-med', name: 'Meditate', icon: '🧘', color: '#4da3ff', since: '2026-10-01' };
+    const raw = {
+      version: 2,
+      smokingRuns: [],
+      habits: [good, { ...good, id: 'workout' }, { ...good, id: 'h-bad', color: 'red' }, { ...good }],
+      checkins: { workout: [], reading: [], 'h-med': ['2026-10-02'], 'h-bad': ['2026-10-02'] },
+      seenAchievements: [],
+      seenLevel: 1,
+    };
+    const s = loadState(memory({ [KEY]: JSON.stringify(raw) }))!;
+    expect(s.habits.map((h) => h.id)).toEqual(['workout', 'reading', 'h-med']);
+    expect(s.checkins).toEqual({ workout: [], reading: [], 'h-med': ['2026-10-02'] });
+  });
+
   it('survives storage that throws', () => {
     const boom = {
       getItem: () => {

@@ -1,4 +1,6 @@
 import confetti from 'canvas-confetti';
+import { MASTERY_GROUP, SMOKE_GROUP, SPECIAL_GROUP, type Tier } from '../logic/achievements';
+import type { Habit } from '../logic/types';
 
 export const COLORS = {
   workout: '#ff7a45',
@@ -6,6 +8,24 @@ export const COLORS = {
   smoke: '#3ee6b0',
   xp: '#ffd166',
 } as const;
+
+export const TIER_META: Record<Tier, { label: string; color: string }> = {
+  common: { label: 'Common', color: '#b8bcc8' },
+  rare: { label: 'Rare', color: '#4da3ff' },
+  epic: { label: 'Epic', color: '#c26bff' },
+  legendary: { label: 'Legendary', color: '#ffb020' },
+  mythic: { label: 'Mythic', color: '#ff4f8b' },
+};
+
+/** Tiers that get the full-screen treatment when unlocked. */
+export const isHeroTier = (t: Tier) => t === 'legendary' || t === 'mythic';
+
+/** Accent color of an achievement group: smoke, special, mastery or a habit id. */
+export function groupColor(group: string, habits: Habit[]): string {
+  if (group === SMOKE_GROUP) return COLORS.smoke;
+  if (group === SPECIAL_GROUP || group === MASTERY_GROUP) return COLORS.xp;
+  return habits.find((h) => h.id === group)?.color ?? COLORS.xp;
+}
 
 export const reducedMotion = (): boolean => {
   try {
@@ -66,6 +86,16 @@ export function bigBurst(): void {
   };
   frame();
   confetti({ ...base, particleCount: 120, spread: 100, startVelocity: 45, origin: { x: 0.5, y: 0.5 }, colors });
+}
+
+/** Fireworks from both top corners for epic+ achievements. */
+export function epicBurst(color: string): void {
+  if (reducedMotion()) return;
+  const colors = [color, '#ffffff', COLORS.xp];
+  for (const x of [0.15, 0.5, 0.85]) {
+    confetti({ ...base, particleCount: 60, spread: 110, startVelocity: 38, ticks: 120, origin: { x, y: 0.15 }, colors });
+  }
+  confetti({ ...base, particleCount: 30, spread: 360, startVelocity: 20, ticks: 140, shapes: ['star'], scalar: 1.3, origin: { x: 0.5, y: 0.35 }, colors });
 }
 
 /** Small shower from the top (achievement unlocked). */

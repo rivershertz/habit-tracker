@@ -1,4 +1,4 @@
-import { emptyState, type HabitId, type SmokingRun, type State } from '../logic/types';
+import { emptyState, type Habit, type SmokingRun, type State } from '../logic/types';
 
 export const KEY = 'ascend:v1';
 
@@ -25,13 +25,37 @@ function cleanRuns(v: unknown): SmokingRun[] {
   return runs;
 }
 
-/** Validate + repair an untrusted blob. Returns null when it can't be a State at all. */
+export const HABIT_NAME_MAX = 24;
+const CUSTOM_ID = /^h-[a-z0-9-]{1,40}$/;
+const HEX = /^#[0-9a-f]{6}$/i;
+
+/** A valid custom habit, or null. Built-ins are never read from storage — they always come from the defaults. */
+export function cleanHabit(v: unknown): Habit | null {
+  if (!isObj(v)) return null;
+  const { id, name, icon, color, since } = v;
+  if (typeof id !== 'string' || !CUSTOM_ID.test(id)) return null;
+  if (typeof name !== 'string' || !name.trim()) return null;
+  if (typeof icon !== 'string' || !icon.trim() || icon.length > 32) return null;
+  if (typeof color !== 'string' || !HEX.test(color)) return null;
+  if (typeof since !== 'string' || !DAY_KEY.test(since)) return null;
+  return { id, name: name.trim().slice(0, HABIT_NAME_MAX), icon: icon.trim(), color, since };
+}
+
+/** Validate + repair an untrusted blob (v1 is migrated). Returns null when it can't be a State at all. */
 export function sanitize(raw: unknown): State | null {
-  if (!isObj(raw) || raw.version !== 1) return null;
+  if (!isObj(raw) || (raw.version !== 1 && raw.version !== 2)) return null;
   const checkins = isObj(raw.checkins) ? raw.checkins : {};
   const base = emptyState();
-  const habits: HabitId[] = ['workout', 'reading'];
-  for (const h of habits) base.checkins[h] = cleanDays(checkins[h]);
+  const ids = new Set(base.habits.map((h) => h.id));
+  for (const h of Array.isArray(raw.habits) ? raw.habits : []) {
+    const habit = cleanHabit(h);
+    if (habit && !ids.has(habit.id)) {
+      ids.add(habit.id);
+      base.habits.push(habit);
+    }
+  }
+  base.checkins = {};
+  for (const h of base.habits) base.checkins[h.id] = cleanDays(checkins[h.id]);
   base.smokingRuns = cleanRuns(raw.smokingRuns);
   base.seenAchievements = Array.isArray(raw.seenAchievements)
     ? raw.seenAchievements.filter((x): x is string => typeof x === 'string')

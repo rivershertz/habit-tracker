@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { emptyState, type State } from './types';
 import { DAY_MS } from './smoking';
-import { evaluateAchievements, unlockedIds, ACHIEVEMENTS } from './achievements';
+import { achievementDefs, evaluateAchievements, unlockedIds, TIERS } from './achievements';
 
 const T0 = new Date(2026, 9, 1, 8, 0).getTime();
 const mk = (p: Partial<State>): State => ({ ...emptyState(), ...p });
@@ -16,7 +16,8 @@ const get = (s: State, id: string, now = T0 + 40 * DAY_MS) =>
 
 describe('achievements', () => {
   it('has unique ids', () => {
-    const ids = ACHIEVEMENTS.map((a) => a.id);
+    const s = mk({ habits: [...emptyState().habits, { id: 'h-a', name: 'A', icon: '🧘', color: '#4da3ff', since: '2026-10-01' }] });
+    const ids = achievementDefs(s).map((a) => a.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
@@ -56,6 +57,59 @@ describe('achievements', () => {
       checkins: { workout: ['2026-10-01'], reading: ['2026-10-01'] },
     });
     expect(get(s, 'perfect-day', T0 + 2 * DAY_MS).unlocked).toBe(true);
+  });
+
+  it('every rarity tier has achievements', () => {
+    const tiers = new Set(evaluateAchievements(emptyState(), T0).map((a) => a.tier));
+    expect([...tiers].sort()).toEqual([...TIERS].sort());
+  });
+
+  it('keeps the original achievement ids so earned badges are not re-celebrated', () => {
+    const ids = new Set(achievementDefs(emptyState()).map((a) => a.id));
+    for (const id of ['first-workout', 'workout-streak-365', 'first-reading', 'reading-streak-3', 'smoke-1d', 'smoke-365d', 'perfect-day', 'comeback']) {
+      expect(ids.has(id)).toBe(true);
+    }
+  });
+
+  it('custom habits get their own badge track', () => {
+    const habit = { id: 'h-water', name: 'Water', icon: '💧', color: '#4da3ff', since: '2026-09-01' };
+    const s = mk({ habits: [...emptyState().habits, habit], checkins: { workout: [], reading: [], 'h-water': days('01', 8) } });
+    expect(get(s, 'first-h-water').unlocked).toBe(true);
+    expect(get(s, 'h-water-streak-7').unlocked).toBe(true);
+    expect(get(s, 'h-water-streak-7').tier).toBe('rare');
+    expect(get(s, 'architect').unlocked).toBe(true);
+  });
+
+  it('flawless week needs 7 perfect days in a row', () => {
+    const d = days('01', 7);
+    const start = new Date(2026, 8, 1, 0, 0).getTime();
+    const s = mk({ smokingRuns: [{ start }], checkins: { workout: d, reading: d } });
+    expect(get(s, 'perfect-week', start + 8 * DAY_MS).unlocked).toBe(true);
+    const s2 = mk({ smokingRuns: [{ start }], checkins: { workout: d, reading: d.slice(1) } });
+    expect(get(s2, 'perfect-week', start + 8 * DAY_MS).unlocked).toBe(false);
+  });
+
+  it('grand slam needs a shared 7-day streak on every habit', () => {
+    const s = mk({ checkins: { workout: days('01', 7), reading: days('01', 7) } });
+    expect(get(s, 'grand-slam').unlocked).toBe(true);
+    const s2 = mk({ checkins: { workout: days('01', 7), reading: days('03', 7) } });
+    expect(get(s2, 'grand-slam').progress).toBeCloseTo(5 / 7);
+  });
+
+  it('juggler counts distinct habits on one day', () => {
+    const extra = ['a', 'b', 'c'].map((x) => ({ id: `h-${x}`, name: x, icon: '🎯', color: '#4da3ff', since: '2026-09-01' }));
+    const day = ['2026-10-01'];
+    const s = mk({
+      habits: [...emptyState().habits, ...extra],
+      checkins: { workout: day, reading: day, 'h-a': day, 'h-b': day, 'h-c': day },
+    });
+    expect(get(s, 'juggler').unlocked).toBe(true);
+  });
+
+  it('level badges follow total xp', () => {
+    const s = mk({ checkins: { workout: days('01', 30), reading: days('01', 30) } });
+    expect(get(s, 'level-5').unlocked).toBe(true);
+    expect(get(s, 'level-60').unlocked).toBe(false);
   });
 
   it('comeback unlocks after returning from a gap of 3+ missed days', () => {

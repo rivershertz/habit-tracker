@@ -1,6 +1,7 @@
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { useState } from 'react';
 import { StoreProvider, useStore } from '../store/store';
+import { AddHabit } from './AddHabit';
 import { Celebrations, FloatLayer } from './Celebrations';
 import { Detail } from './Detail';
 import { Journey } from './Journey';
@@ -13,6 +14,7 @@ function Shell() {
   const { onboarded, persisted } = useStore();
   const [tab, setTab] = useState<Tab>('today');
   const [detail, setDetail] = useState<DetailId | null>(null);
+  const [adding, setAdding] = useState(false);
 
   if (!onboarded) return <Onboarding />;
 
@@ -31,12 +33,13 @@ function Shell() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18 }}
           >
-            {tab === 'today' ? <Today onOpen={setDetail} /> : <Journey />}
+            {tab === 'today' ? <Today onOpen={setDetail} onAdd={() => setAdding(true)} /> : <Journey />}
           </motion.div>
         </AnimatePresence>
       </main>
       <TabBar tab={tab} onChange={setTab} />
       <AnimatePresence>{detail && <Detail key={detail} id={detail} onClose={() => setDetail(null)} />}</AnimatePresence>
+      <AnimatePresence>{adding && <AddHabit onClose={() => setAdding(false)} />}</AnimatePresence>
       <Celebrations />
     </div>
   );

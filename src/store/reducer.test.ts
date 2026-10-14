@@ -41,6 +41,39 @@ describe('reduce', () => {
   });
 });
 
+describe('custom habits', () => {
+  const habit = { id: 'h-med', name: 'Meditate', icon: '🧘', color: '#4da3ff', since: '2026-10-01' };
+
+  it('addHabit adds a habit with an empty check-in list', () => {
+    const s = reduce(emptyState(), { type: 'addHabit', habit });
+    expect(s.habits.map((h) => h.id)).toEqual(['workout', 'reading', 'h-med']);
+    expect(s.checkins['h-med']).toEqual([]);
+  });
+
+  it('addHabit rejects duplicates, built-in ids and invalid habits', () => {
+    const s = reduce(emptyState(), { type: 'addHabit', habit });
+    expect(reduce(s, { type: 'addHabit', habit })).toBe(s);
+    expect(reduce(s, { type: 'addHabit', habit: { ...habit, id: 'workout' } })).toBe(s);
+    expect(reduce(s, { type: 'addHabit', habit: { ...habit, id: 'h-x', name: '  ' } })).toBe(s);
+  });
+
+  it('setCheckin works for custom habits and ignores unknown ones', () => {
+    let s = reduce(emptyState(), { type: 'addHabit', habit });
+    s = reduce(s, { type: 'setCheckin', habit: 'h-med', day: '2026-10-02', on: true });
+    expect(s.checkins['h-med']).toEqual(['2026-10-02']);
+    expect(reduce(s, { type: 'setCheckin', habit: 'h-nope', day: '2026-10-02', on: true })).toBe(s);
+  });
+
+  it('removeHabit drops the habit and its history, but never a built-in', () => {
+    let s = reduce(emptyState(), { type: 'addHabit', habit });
+    s = reduce(s, { type: 'setCheckin', habit: 'h-med', day: '2026-10-02', on: true });
+    s = reduce(s, { type: 'removeHabit', id: 'h-med' });
+    expect(s.habits.map((h) => h.id)).toEqual(['workout', 'reading']);
+    expect('h-med' in s.checkins).toBe(false);
+    expect(reduce(s, { type: 'removeHabit', id: 'workout' })).toBe(s);
+  });
+});
+
 describe('pendingCelebrations', () => {
   it('reports newly unlocked achievements and level-ups only once', () => {
     let s = reduce(emptyState(), { type: 'setCheckin', habit: 'workout', day: '2026-10-01', on: true });

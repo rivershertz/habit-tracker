@@ -1,6 +1,6 @@
 import { smokeFreeBlockDates } from './smoking';
 import { streakLengthAt } from './streaks';
-import type { HabitId, State } from './types';
+import { datesOf, type HabitId, type State } from './types';
 
 export const XP_CHECKIN = 10;
 export const XP_STREAK_BONUS_CAP = 10;
@@ -8,8 +8,8 @@ export const XP_SMOKE_DAY = 15;
 export const XP_PERFECT = 20;
 
 export interface XpBreakdown {
-  workout: number;
-  reading: number;
+  /** per habit id */
+  habits: Record<HabitId, number>;
   smoke: number;
   perfect: number;
 }
@@ -23,16 +23,20 @@ function habitXp(dates: string[]): number {
   return sum;
 }
 
+/** Smoke-free days on which every habit that existed that day was checked in. */
 export function perfectDays(state: State, now: number): string[] {
-  const smoke = new Set(smokeFreeBlockDates(state, now));
-  const reading = new Set(state.checkins.reading);
-  return [...new Set(state.checkins.workout)].filter((d) => reading.has(d) && smoke.has(d)).sort();
+  const sets = state.habits.map((h) => ({ since: h.since, days: new Set(datesOf(state, h.id)) }));
+  return smokeFreeBlockDates(state, now).filter((d) => {
+    const active = sets.filter((h) => h.since <= d);
+    return active.length > 0 && active.every((h) => h.days.has(d));
+  });
 }
 
 export function xpBreakdown(state: State, now: number): XpBreakdown {
+  const habits: Record<HabitId, number> = {};
+  for (const h of state.habits) habits[h.id] = habitXp(datesOf(state, h.id));
   return {
-    workout: habitXp(state.checkins.workout),
-    reading: habitXp(state.checkins.reading),
+    habits,
     smoke: smokeFreeBlockDates(state, now).length * XP_SMOKE_DAY,
     perfect: perfectDays(state, now).length * XP_PERFECT,
   };
@@ -40,7 +44,7 @@ export function xpBreakdown(state: State, now: number): XpBreakdown {
 
 export function totalXp(state: State, now: number): number {
   const b = xpBreakdown(state, now);
-  return b.workout + b.reading + b.smoke + b.perfect;
+  return Object.values(b.habits).reduce((a, x) => a + x, 0) + b.smoke + b.perfect;
 }
 
 /** Cumulative XP needed to reach level n. */
@@ -75,5 +79,3 @@ export function levelForXp(xp: number): LevelInfo {
   const xpForNext = next - base;
   return { level, rank: rankForLevel(level), xpIntoLevel, xpForNext, progress: xpIntoLevel / xpForNext };
 }
-
-export const HABIT_IDS: HabitId[] = ['workout', 'reading'];

@@ -21,7 +21,7 @@ describe('xp', () => {
     const s = mk({ checkins: { workout: days, reading: [] } });
     // day n earns 10 + min(n-1, 10): 10..20 for n=1..11, then 20 for n=12..15
     const expected = Array.from({ length: 15 }, (_, i) => 10 + Math.min(i, 10)).reduce((a, b) => a + b, 0);
-    expect(xpBreakdown(s, T0).workout).toBe(expected);
+    expect(xpBreakdown(s, T0).habits.workout).toBe(expected);
   });
 
   it('awards 15 xp per completed smoke-free day', () => {
@@ -38,6 +38,26 @@ describe('xp', () => {
     expect(perfectDays(s, now)).toEqual(['2026-10-01']);
     expect(xpBreakdown(s, now).perfect).toBe(20);
     expect(totalXp(s, now)).toBe(10 + 10 + 15 + 20);
+  });
+});
+
+describe('xp with custom habits', () => {
+  const meditate = { id: 'h-med', name: 'Meditate', icon: '🧘', color: '#4da3ff', since: '2026-10-02' };
+
+  it('awards check-in xp to custom habits', () => {
+    const s = mk({ habits: [...emptyState().habits, meditate], checkins: { workout: [], reading: [], 'h-med': ['2026-10-02'] } });
+    expect(xpBreakdown(s, T0).habits['h-med']).toBe(10);
+    expect(totalXp(s, T0)).toBe(10);
+  });
+
+  it('a custom habit only joins perfect days from the day it was added', () => {
+    const s = mk({
+      smokingRuns: [{ start: T0 }],
+      habits: [...emptyState().habits, meditate],
+      checkins: { workout: ['2026-10-01', '2026-10-02'], reading: ['2026-10-01', '2026-10-02'], 'h-med': [] },
+    });
+    // 10-01 predates the habit, so it stays perfect; 10-02 now needs a meditation check-in too
+    expect(perfectDays(s, T0 + 3 * DAY_MS)).toEqual(['2026-10-01']);
   });
 });
 
