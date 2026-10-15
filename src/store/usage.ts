@@ -10,7 +10,7 @@ import { DAY_KEY, type StorageLike } from './storage';
 export const USAGE_KEY = 'ascend:usage';
 
 /** GoatCounter site code (https://<code>.goatcounter.com). Empty disables analytics. */
-export const GOATCOUNTER_CODE = '';
+export const GOATCOUNTER_CODE = 'rivshe-ascend';
 
 export interface Usage {
   /** first day the app was opened on this device */
