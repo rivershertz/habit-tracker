@@ -2,9 +2,11 @@ import { daysBetween } from '../logic/dates';
 import { DAY_KEY, type StorageLike } from './storage';
 
 /**
- * Anonymous usage stats. Once per local day the app sends a few GoatCounter events built from
+ * Anonymous usage stats. Once per local day the app sends one GoatCounter event built from
  * coarse, locally computed buckets: how many of the last 7 days the app was opened, how long ago
- * it was first opened, and whether it runs installed or in a browser tab. No id, no habit data,
+ * it was first opened, and whether it runs installed or in a browser tab — e.g.
+ * `active-3of7/age-1-4w/installed`. One event per device per day, so the event count is daily
+ * active users; filter by a part of the path (`age-1-4w`) to read one dimension. No id, no habit data,
  * nothing that tells two devices apart is ever sent — the open history below never leaves the device.
  */
 export const USAGE_KEY = 'ascend:usage';
@@ -17,7 +19,7 @@ export interface Usage {
   first: string;
   /** days the app was opened, last 30 at most */
   opens: string[];
-  /** last day events were sent */
+  /** last day the event was sent */
   ping?: string;
 }
 
@@ -48,8 +50,8 @@ export function parseUsage(text: string | null): Partial<Usage> {
 }
 
 /**
- * Record an open on `today`. Returns the updated usage and the events to send — none if they
- * were already sent today. `seedFirst` backdates the first-open day for people who used the app
+ * Record an open on `today`. Returns the updated usage and the event to send — null if it
+ * was already sent today. `seedFirst` backdates the first-open day for people who used the app
  * before usage was recorded (their earliest check-in).
  */
 export function recordOpen(
@@ -57,7 +59,7 @@ export function recordOpen(
   today: string,
   installed: boolean,
   seedFirst?: string,
-): { usage: Usage; events: string[] } {
+): { usage: Usage; event: string | null } {
   const candidates = [prev.first, seedFirst, today].filter((d): d is string => !!d && daysBetween(d, today) >= 0);
   const first = candidates.sort()[0];
   const opens = [...new Set([...(prev.opens ?? []), today])]
@@ -66,11 +68,11 @@ export function recordOpen(
       return ago >= 0 && ago < KEEP_DAYS;
     })
     .sort();
-  if (prev.ping === today) return { usage: { first, opens, ping: today }, events: [] };
+  if (prev.ping === today) return { usage: { first, opens, ping: today }, event: null };
 
   const active = opens.filter((d) => daysBetween(d, today) < 7).length;
-  const events = [`active-${active}of7`, `age-${ageBucket(daysBetween(first, today))}`, `mode-${installed ? 'installed' : 'browser'}`];
-  return { usage: { first, opens, ping: today }, events };
+  const event = `active-${active}of7/age-${ageBucket(daysBetween(first, today))}/${installed ? 'installed' : 'browser'}`;
+  return { usage: { first, opens, ping: today }, event };
 }
 
 /** Respect Global Privacy Control and Do Not Track. */
@@ -83,7 +85,7 @@ export function countUrl(code: string, event: string): string {
   return `https://${code}.goatcounter.com/count?${q}`;
 }
 
-/** Update local usage and send today's events, if any. Never throws — analytics must not break the app. */
+/** Update local usage and send today's event, if not sent yet. Never throws — analytics must not break the app. */
 export function trackDailyUsage(opts: {
   storage: StorageLike;
   today: string;
@@ -91,15 +93,15 @@ export function trackDailyUsage(opts: {
   seedFirst?: string;
   send: (url: string) => void;
   code?: string;
-}): string[] {
+}): string | null {
   const code = opts.code ?? GOATCOUNTER_CODE;
   try {
-    if (!code) return [];
-    const { usage, events } = recordOpen(parseUsage(opts.storage.getItem(USAGE_KEY)), opts.today, opts.installed, opts.seedFirst);
+    if (!code) return null;
+    const { usage, event } = recordOpen(parseUsage(opts.storage.getItem(USAGE_KEY)), opts.today, opts.installed, opts.seedFirst);
     opts.storage.setItem(USAGE_KEY, JSON.stringify(usage));
-    for (const e of events) opts.send(countUrl(code, e));
-    return events;
+    if (event) opts.send(countUrl(code, event));
+    return event;
   } catch {
-    return [];
+    return null;
   }
 }

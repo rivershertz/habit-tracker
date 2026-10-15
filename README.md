@@ -54,9 +54,9 @@ Because data is stored per browser, clearing site data (or using a private windo
 ## Privacy
 
 Your habits never leave your device. The app sends anonymous usage stats to
-[GoatCounter](https://www.goatcounter.com) (no cookies, no ids), at most once a day. Those stats are only three coarse
-labels: how many of the last 7 days the app was opened (`active-3of7`), how long ago it was first opened (`age-1-4w`),
-and whether it runs installed or in a browser tab (`mode-installed`). To compute them, the app keeps a short list of
+[GoatCounter](https://www.goatcounter.com) (no cookies, no ids): one event per device per day, made of three coarse
+labels — how many of the last 7 days the app was opened, how long ago it was first opened, and whether it runs
+installed or in a browser tab (e.g. `active-3of7/age-1-4w/installed`). To compute them, the app keeps a short list of
 recent open days in `localStorage` (`ascend:usage`), and that list stays on your device. Turn on Global Privacy
 Control or Do Not Track in your browser and the app sends nothing. See `src/store/usage.ts`.
 

@@ -11,22 +11,22 @@ const memory = (init: Record<string, string> = {}) => {
 };
 
 describe('usage', () => {
-  it('sends day-0 events on the very first open', () => {
-    const { usage, events } = recordOpen({}, '2026-10-15', false);
+  it('sends one day-0 event on the very first open', () => {
+    const { usage, event } = recordOpen({}, '2026-10-15', false);
     expect(usage).toEqual({ first: '2026-10-15', opens: ['2026-10-15'], ping: '2026-10-15' });
-    expect(events).toEqual(['active-1of7', 'age-day0', 'mode-browser']);
+    expect(event).toBe('active-1of7/age-day0/browser');
   });
 
   it('sends nothing on a second open the same day', () => {
     const first = recordOpen({}, '2026-10-15', true).usage;
-    expect(recordOpen(first, '2026-10-15', true).events).toEqual([]);
+    expect(recordOpen(first, '2026-10-15', true).event).toBeNull();
   });
 
   it('counts active days in the last 7 and drops opens older than 30 days', () => {
     const prev = { first: '2026-08-01', opens: ['2026-08-01', '2026-10-08', '2026-10-10', '2026-10-14'], ping: '2026-10-14' };
-    const { usage, events } = recordOpen(prev, '2026-10-15', true);
+    const { usage, event } = recordOpen(prev, '2026-10-15', true);
     expect(usage.opens).toEqual(['2026-10-08', '2026-10-10', '2026-10-14', '2026-10-15']);
-    expect(events).toEqual(['active-3of7', 'age-1-3m', 'mode-installed']);
+    expect(event).toBe('active-3of7/age-1-3m/installed');
   });
 
   it('backdates the first open to an earlier check-in, never to the future', () => {
@@ -65,17 +65,18 @@ describe('usage', () => {
   it('sends nothing and stores nothing without a site code', () => {
     const m = memory();
     const sent: string[] = [];
-    expect(trackDailyUsage({ storage: m, today: '2026-10-15', installed: false, send: (u) => sent.push(u), code: '' })).toEqual([]);
+    expect(trackDailyUsage({ storage: m, today: '2026-10-15', installed: false, send: (u) => sent.push(u), code: '' })).toBeNull();
     expect(sent).toEqual([]);
     expect(m.data[USAGE_KEY]).toBeUndefined();
   });
 
-  it('sends once per day with a site code', () => {
+  it('sends a single event once per day with a site code', () => {
     const m = memory();
     const sent: string[] = [];
     const run = () => trackDailyUsage({ storage: m, today: '2026-10-15', installed: false, send: (u) => sent.push(u), code: 'ascend' });
     run();
     run();
-    expect(sent).toHaveLength(3);
+    expect(sent).toHaveLength(1);
+    expect(new URL(sent[0]).searchParams.get('p')).toBe('active-1of7/age-day0/browser');
   });
 });
