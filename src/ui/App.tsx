@@ -7,6 +7,7 @@ import { Detail } from './Detail';
 import { Journey } from './Journey';
 import { Onboarding } from './Onboarding';
 import { TabBar, type Tab } from './TabBar';
+import { ThemeProvider } from './theme';
 import { Today, type DetailId } from './Today';
 import { TopBar } from './TopBar';
 
@@ -48,10 +49,12 @@ function Shell() {
 export function App() {
   return (
     <MotionConfig reducedMotion="user">
-      <StoreProvider>
-        <Shell />
-        <FloatLayer />
-      </StoreProvider>
+      <ThemeProvider>
+        <StoreProvider>
+          <Shell />
+          <FloatLayer />
+        </StoreProvider>
+      </ThemeProvider>
     </MotionConfig>
   );
 }

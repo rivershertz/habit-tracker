@@ -27,7 +27,14 @@ export function TopBar({ onOpenJourney }: { onOpenJourney: () => void }) {
           </span>
         </span>
       </button>
-      <div className="xp-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(info.progress * 100)}>
+      <div
+        className="xp-track"
+        style={{ ['--p' as string]: info.progress }}
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(info.progress * 100)}
+      >
         <motion.div
           className="xp-fill"
           initial={{ width: 0 }}

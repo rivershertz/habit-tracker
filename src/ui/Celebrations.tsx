@@ -58,7 +58,7 @@ export function FloatLayer() {
         <motion.span
           key={e.id}
           className="float-xp"
-          style={{ left: e.x, top: e.y, color: e.color }}
+          style={{ left: e.x, top: e.y, ['--accent' as string]: e.color }}
           initial={{ opacity: 0, y: 0, scale: 0.5, x: '-50%' }}
           animate={{ opacity: [0, 1, 1, 0], y: -110, scale: [0.5, 1.25, 1, 1] }}
           transition={{ duration: 1.2, ease: 'easeOut', times: [0, 0.2, 0.7, 1] }}

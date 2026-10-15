@@ -164,8 +164,8 @@ export function AddHabit({ onClose }: { onClose: () => void }) {
           )}
         </AnimatePresence>
 
-        <span className="field-label">Color</span>
-        <div className="swatches" role="radiogroup" aria-label="Color">
+        <span className="field-label color-field">Color</span>
+        <div className="swatches color-field" role="radiogroup" aria-label="Color">
           {HABIT_COLORS.map((c) => (
             <button
               key={c}

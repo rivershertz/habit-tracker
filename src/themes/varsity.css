@@ -1,0 +1,249 @@
+/*
+ * Varsity: the app as a letterman jacket. Forest-green felt, bone thread, gold, team colors.
+ * Streak counts are tackle-twill numerals (bone fill, team-color outline stitch, hard shadow);
+ * panels are stitched felt (a dashed inset outline) instead of glass.
+ *
+ * Almost everything is the token contract in styles.css; the rules at the bottom are the few
+ * pieces that are shape, not style (patches, the LOG button, the underline tab).
+ */
+:root[data-theme='varsity'] {
+  /* palette */
+  --bg: #123d2f;
+  --felt-3: #225843;
+  --felt-deep: #0a251c;
+  --bone: #f1ead8;
+  --gold: #e8b53e;
+  --varsity-red: #c8322f;
+  --surface: #1b4c3b;
+  --surface-2: var(--felt-3);
+  --border: rgba(241, 234, 216, 0.16);
+  --text: var(--bone);
+  --muted: #cbc4b0;
+  --faint: #a3b3a6;
+  --xp: var(--gold);
+  --danger: #ff8a7a;
+  --radius: 18px;
+  color-scheme: dark;
+
+  /* habit colors become team colors: pulled toward a deep brick so neon sits on felt */
+  --tint-mix: 72%;
+  --tint-shade: #3a0f08;
+
+  /* type */
+  --font-body: 'Instrument Sans', system-ui, sans-serif;
+  --font-display: 'Big Shoulders Display', 'Arial Narrow', sans-serif;
+  --font-num: var(--font-display);
+  --font-label: var(--font-display);
+  --mono: var(--font-body);
+  --display-case: uppercase;
+  --display-tracking: 0.03em;
+  --label-case: uppercase;
+  --label-tracking: 0.08em;
+  --label-size: 14px;
+  --label-weight: 800;
+
+  /* tackle-twill numerals */
+  --num-weight: 900;
+  --num-tracking: 0.01em;
+  --num-leading: 0.85;
+  --num-paint: none;
+  --num-ink: var(--bone);
+  --num-stroke-width: 0.07em;
+  --num-shadow: 0.06em 0.06em 0 var(--felt-deep);
+  --big-num-size: 100px;
+  --stat-size: 40px;
+  --stat-ink: var(--bone);
+  --hero-num-size: 84px;
+  --levelup-size: 190px;
+  --levelup-glow: none;
+  --streak-font: var(--font-num);
+  --streak-size: 34px;
+  --streak-gap: 8px;
+  --streak-ink: var(--bone);
+  --streak-icon: none;
+  --streak-unit-size: 11px;
+  --ring-num-size: 26px;
+  --tier-num-font: var(--font-num);
+  --tier-num-size: 20px;
+  --float-font: var(--font-num);
+  --float-size: 30px;
+  --float-shadow: 2px 2px 0 var(--felt-deep);
+
+  /* no glass, no glow: stitched felt */
+  --glow: 0;
+  --blur: 0;
+  --page-bg: var(--bg);
+  --sheet-bg: var(--bg);
+  --card-bg: var(--surface);
+  --card-on-bg: var(--surface-2);
+  --card-border: 0;
+  --stitch: 2px dashed rgba(241, 234, 216, 0.3);
+  --stitch-done: rgba(241, 234, 216, 0.55);
+  --tile-radius: 16px;
+  --modal-radius: 22px;
+  --modal-bg: var(--surface);
+  --backdrop: rgba(5, 20, 15, 0.72);
+  --toast-bg: var(--surface);
+  --toast-border: 0;
+  --toast-kicker: var(--gold);
+  --toast-title-font: var(--font-display);
+  --toast-title-size: 20px;
+  --sweep: none;
+  --mythic-bg: var(--surface-2);
+  --mythic-anim: none;
+  --input-bg: rgba(0, 0, 0, 0.2);
+
+  /* top bar: a gold patch and a ten-game season */
+  --level-radius: 50%;
+  --level-bg: var(--gold);
+  --level-ink: var(--bg);
+  --level-size: 30px;
+  --level-shadow: 0 0 0 3px var(--bone), 0 0 0 5px var(--bg), 0 0 0 6px rgba(241, 234, 216, 0.3);
+  --rank-size: 21px;
+  --xp-height: 9px;
+  --xp-fill: var(--gold);
+  --bar-radius: 0;
+  --track: rgba(241, 234, 216, 0.14);
+  --xp-mask: repeating-linear-gradient(90deg, #000 0 calc(10% - 3px), transparent calc(10% - 3px) 10%);
+
+  /* tab bar */
+  --tabbar-radius: 16px;
+  --tabbar-bg: var(--felt-deep);
+  --tab-font: var(--font-display);
+  --tab-size: 16px;
+  --tab-tracking: 0.08em;
+  --tab-case: uppercase;
+  --tab-active: var(--gold);
+  --tab-pill: var(--gold);
+  --tab-pill-inset: auto 22% 0;
+  --tab-pill-height: 3px;
+  --tab-pill-radius: 2px;
+  --tab-pill-shadow: none;
+
+  /* Today */
+  --hello-size: 36px;
+  --hello-weight: 900;
+  --hello-leading: 0.95;
+  --quest-on: var(--gold);
+  --quests-font: var(--font-display);
+  --quests-size: 16px;
+  --quests-ink: var(--gold);
+  --chip-radius: 4px;
+  --chip-pad: 6px 10px 5px;
+  --chip-ink: var(--bone);
+  --chip-fill: 100%;
+  --chip-ghost-bg: transparent;
+  --chip-ghost-ring: inset 0 0 0 1px var(--border);
+  --big-unit-size: 15px;
+  --icon-radius: 50%;
+  --icon-ink: var(--bone);
+  --icon-fill: 100%;
+  --icon-ring: 0 0 0 3px var(--surface), 0 0 0 4.5px rgba(241, 234, 216, 0.3);
+  --habit-title-size: 24px;
+  --habit-title-leading: 1;
+  --risk-ink: #ffb4a8;
+  --risk-weight: 600;
+  --perfect-ink: var(--bg);
+  --perfect-bg: var(--gold);
+  --perfect-border: 0;
+  --add-border: rgba(241, 234, 216, 0.3);
+
+  /* detail, journey, controls */
+  --title-size: 16px;
+  --title-weight: 800;
+  --title-tracking: 0.1em;
+  --cell-radius: 3px;
+  --cell-off: rgba(241, 234, 216, 0.08);
+  --cell-today: var(--gold);
+  --icon-btn-radius: 50%;
+  --rank-hero-size: 34px;
+  --badge-title-font: var(--font-display);
+  --badge-title-size: 15px;
+  --badge-title-tracking: 0.03em;
+  --badge-title-case: uppercase;
+  --tier-chip-radius: 10px;
+  --btn-radius: 12px;
+  --btn-font: var(--font-display);
+  --btn-size: 19px;
+  --btn-weight: 800;
+  --btn-tracking: 0.06em;
+  --btn-case: uppercase;
+  --btn-primary: var(--bone);
+  --btn-primary-ink: var(--bg);
+  --btn-accent-ink: var(--bone);
+  --btn-shadow: 0 4px 0 var(--felt-deep);
+  --danger-bg: var(--varsity-red);
+  --logo-radius: 50%;
+  --logo-shadow: 0 0 0 4px var(--bone), 0 0 0 6px var(--bg), 0 0 0 7px rgba(241, 234, 216, 0.3);
+  --wordmark-size: 64px;
+  --wordmark-tracking: 0.02em;
+  --levelup-bg: radial-gradient(60% 50% at 50% 45%, rgba(232, 181, 62, 0.22), rgba(10, 37, 28, 0.95) 70%);
+  --medal-border: 4px solid var(--bone);
+  --medal-shadow: 0 10px 0 var(--felt-deep);
+}
+
+/* ---------- shape, not style ---------- */
+
+/* the level patch and the habit patches are stitched on */
+[data-theme='varsity'] :is(.level-badge, .habit-icon, .toast-icon) {
+  outline: 1.5px dashed rgba(241, 234, 216, 0.55);
+  outline-offset: -5px;
+}
+
+[data-theme='varsity'] .level-badge {
+  width: 46px;
+  height: 46px;
+  outline-color: rgba(18, 61, 47, 0.55);
+  outline-offset: -6px;
+}
+
+/* the level number gets the red twill outline whatever its group color */
+[data-theme='varsity'] :is(.hero, .levelup) {
+  --num-stroke-width: 0.08em;
+  --num-stroke-color: var(--varsity-red);
+}
+
+/* check-in: a bone LOG button that presses down, then a sewn-on patch */
+[data-theme='varsity'] .check-btn .ring svg {
+  display: none;
+}
+
+[data-theme='varsity'] :is(.check-empty, .check-mark) {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border: 0;
+  border-radius: 50%;
+}
+
+[data-theme='varsity'] .check-empty {
+  background: var(--bone);
+  box-shadow: var(--btn-shadow);
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+}
+
+[data-theme='varsity'] .check-empty::after {
+  content: 'LOG';
+  font: 900 17px/1 var(--font-display);
+  letter-spacing: 0.06em;
+  color: var(--bg);
+}
+
+[data-theme='varsity'] .check-btn:not(:disabled):active .check-empty {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--felt-deep);
+}
+
+[data-theme='varsity'] .check-mark {
+  color: var(--bone);
+  box-shadow: var(--icon-ring);
+  outline: 2px dashed rgba(241, 234, 216, 0.7);
+  outline-offset: -6px;
+}
+
+[data-theme='varsity'] .hero-icon {
+  --medal-bg: var(--tier-tint); /* declared here, not on :root, so it takes this medal's tier */
+  outline: 2px dashed rgba(241, 234, 216, 0.6);
+  outline-offset: -12px;
+}

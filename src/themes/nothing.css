@@ -1,0 +1,483 @@
+/*
+ * Nothing: a hardware status display. Black, white and grey tiles on a dot grid,
+ * dot-matrix numerals (Doto), tiny uppercase mono labels, and one red that means "owed now".
+ * Habit colors are dropped on purpose (--tint-mix: 0%); position and the Glyph strip identify a habit.
+ *
+ * The :root block is the token contract from styles.css. The rules below it are structure the
+ * tokens can't express: the widget-grid Today, the habit tiles, the Glyph strip and the XP head dot.
+ */
+:root[data-theme='nothing'] {
+  /* palette */
+  --bg: #000;
+  --surface: #141414;
+  --surface-2: #1f1f1f;
+  --border: #2a2a2a;
+  --text: #f2f2f2;
+  --muted: #a3a3a3;
+  --faint: #858585;
+  --xp: var(--text);
+  --red: #d71921;
+  --red-text: #ff4b55;
+  --danger: var(--red-text);
+  --radius: 26px;
+  --dots: radial-gradient(circle, #1a1a1a 1px, transparent 1.4px) 0 0 / 14px 14px;
+  color-scheme: dark;
+
+  /* monochrome: every habit color resolves to white */
+  --tint-mix: 0%;
+  --tint-shade: var(--text);
+
+  /* type: dot matrix for numbers only, mono for labels */
+  --font-body: 'Geist', system-ui, sans-serif;
+  --font-num: 'Doto', ui-monospace, monospace;
+  --font-label: 'Geist Mono', ui-monospace, monospace;
+  --mono: var(--font-label);
+  --num-variation: 'ROND' 100;
+  --display-tracking: -0.01em;
+  --label-case: uppercase;
+  --label-tracking: 0.08em;
+  --label-size: 11px;
+  --label-weight: 500;
+
+  /* numerals */
+  --num-weight: 900;
+  --num-tracking: -0.02em;
+  --num-leading: 0.8;
+  --num-paint: none;
+  --num-ink: var(--text);
+  --big-num-size: 84px;
+  --big-unit-size: 11px;
+  --stat-size: 40px;
+  --stat-ink: var(--text);
+  --stat-label-size: 11px;
+  --hero-num-size: 72px;
+  --levelup-size: 170px;
+  --levelup-glow: drop-shadow(0 0 30px rgba(255, 255, 255, 0.35));
+  --streak-font: var(--font-num);
+  --streak-ink: currentColor;
+  --streak-icon: none;
+  --ring-num-size: 22px;
+  --ring-label-font: var(--font-label);
+  --clock-font: var(--font-num);
+  --tier-num-font: var(--font-num);
+  --float-font: var(--font-num);
+  --float-size: 26px;
+  --float-ink: var(--text);
+  --float-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+
+  /* flat tiles; light only comes from the Glyph strip */
+  --glow: 0;
+  --blur: 0;
+  --page-bg: var(--dots), var(--bg);
+  --sheet-bg: var(--page-bg);
+  --card-bg: var(--surface);
+  --card-on-bg: var(--surface-2);
+  --card-border: 0;
+  --tile-radius: 22px;
+  --modal-radius: 28px;
+  --modal-bg: var(--surface);
+  --backdrop: rgba(0, 0, 0, 0.78);
+  --toast-bg: var(--surface);
+  --toast-border: 0;
+  --toast-kicker: var(--red-text);
+  --sweep: none;
+  --mythic-bg: var(--surface-2);
+  --mythic-anim: none;
+  --input-bg: #0a0a0a;
+  --input-radius: 16px;
+  --icon-filter: grayscale(1);
+  --emoji-radius: 50%;
+
+  /* top bar: a dot-matrix level and an XP row of dots */
+  --level-radius: 0;
+  --level-bg: none;
+  --level-ink: var(--text);
+  --level-size: 40px;
+  --level-shadow: none;
+  --xp-height: 6px;
+  --xp-fill: var(--text);
+  --bar-radius: 0;
+  --track: #333;
+  --bar-mask: radial-gradient(circle, #000 2.6px, transparent 3px) 0 50% / 10px 6px repeat-x;
+
+  /* tab bar: a white pill */
+  --tabbar-width: 250px;
+  --tabbar-pad: 4px;
+  --tabbar-radius: 99px;
+  --tabbar-bg: var(--surface-2);
+  --tabbar-border: 0;
+  --tab-font: var(--font-label);
+  --tab-tracking: 0.08em;
+  --tab-case: uppercase;
+  --tab-active: #000;
+  --tab-pill: var(--text);
+  --tab-pill-radius: 99px;
+  --tab-pill-shadow: none;
+  --tab-icon: none;
+
+  /* Today */
+  --hello-size: 24px;
+  --hello-weight: 600;
+  --hello-date-size: 11px;
+  --quests: none;
+  --chip-pad: 0;
+  --chip-bg: transparent;
+  --chip-ink: var(--muted);
+  --chip-ghost-bg: transparent;
+  --chip-icon: none;
+  --risk-ink: var(--red);
+  --risk-weight: 700;
+  --perfect-ink: var(--text);
+  --perfect-bg: var(--surface);
+  --perfect-border: 0;
+  --add-radius: 99px;
+  --add-border: #333;
+
+  /* detail, journey, controls */
+  --title-size: 11px;
+  --title-weight: 500;
+  --title-tracking: 0.08em;
+  --cell-radius: 50%;
+  --cell-off: #262626;
+  --cell-today: var(--red);
+  --icon-btn-radius: 50%;
+  --rank-hero-size: 22px;
+  --total-xp-ink: var(--text);
+  --tier-chip-radius: 16px;
+  --tier-label-size: 8.5px;
+  --tier-on-bg: var(--text);
+  --btn-radius: 99px;
+  --btn-font: var(--font-label);
+  --btn-size: 13px;
+  --btn-weight: 500;
+  --btn-tracking: 0.06em;
+  --btn-case: uppercase;
+  --btn-primary: var(--text);
+  --btn-primary-ink: #000;
+  --btn-accent-ink: #000;
+  --btn-shadow: none;
+  --danger-bg: var(--red);
+  --toggle-on-bg: var(--text);
+  --toggle-on-ink: #000;
+  --toggle-on-muted: #444;
+  --logo-radius: 50%;
+  --logo-shadow: none;
+  --wordmark-font: var(--font-num);
+  --wordmark-variation: 'ROND' 100;
+  --wordmark-size: 56px;
+  --wordmark-tracking: 0;
+  --levelup-bg: var(--dots), rgba(0, 0, 0, 0.95);
+  --levelup-kicker: var(--red-text);
+  --medal-bg: var(--surface);
+  --medal-shadow: 0 0 50px rgba(255, 255, 255, 0.2);
+  --rays: #fff;
+}
+
+/* ---------- color exceptions ---------- */
+
+/* the rarest tiers keep a color: the one red */
+[data-theme='nothing'] :is(.tier-legendary, .tier-mythic) {
+  --tier-shade: var(--red-text);
+}
+
+[data-theme='nothing'] .badge.unlocked:is(.tier-legendary, .tier-mythic) {
+  border: 1px solid var(--red);
+}
+
+[data-theme='nothing'] .hero-icon {
+  --medal-border: 2px solid var(--tier-tint); /* declared here so it takes this medal's tier */
+}
+
+[data-theme='nothing'] .tier-chip.on :is(b, span, small) {
+  color: #000;
+}
+
+/* habits have no color here, so there's nothing to pick (they keep it for other themes) */
+[data-theme='nothing'] .color-field {
+  display: none;
+}
+
+/* ---------- top bar ---------- */
+[data-theme='nothing'] .level-badge {
+  width: auto;
+  min-width: 40px;
+  line-height: 0.85;
+}
+
+[data-theme='nothing'] .level-rank {
+  font-family: var(--font-label);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* a red "you are here" dot at the head of the XP row */
+[data-theme='nothing'] .xp-fill::after {
+  display: block; /* the glow sweep this pseudo-element normally draws is off (--sweep: none) */
+  inset: 0 0 0 auto;
+  width: 10px;
+  background: var(--red);
+  transform: none;
+  animation: none;
+}
+
+/* lit dots snap to whole dots (the inline width would cut one in half) */
+[data-theme='nothing'] :is(.xp-fill, .bar i) {
+  width: round(down, calc(var(--p, 0) * 100%), 10px) !important;
+  transition: width 0.4s ease-out;
+}
+
+[data-theme='nothing'] .clock i {
+  font-family: var(--font-label);
+  text-transform: uppercase;
+}
+
+/* ---------- Today: a widget grid ---------- */
+[data-theme='nothing'] .today-screen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+[data-theme='nothing'] .today-screen > .slot-wide {
+  grid-column: 1 / -1;
+}
+
+[data-theme='nothing'] .today-screen > .slot-habit > .card {
+  height: 100%;
+}
+
+/* check-in habits: the one you still owe today is a white tile */
+[data-theme='nothing'] .habit-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'title check'
+    'num num'
+    'status status';
+  align-items: end;
+  row-gap: 8px;
+  min-height: 176px;
+  padding: 16px;
+  color: #000;
+  background: var(--text);
+  transition: background 0.25s ease-out, color 0.25s ease-out;
+  --muted: #4d4d4d;
+  --dot-off: #c4c4c4;
+  --dot-on: #000;
+}
+
+[data-theme='nothing'] .habit-card.is-done {
+  color: var(--text);
+  background: var(--surface);
+  --muted: #a3a3a3;
+  --dot-off: #333;
+  --dot-on: var(--text);
+}
+
+[data-theme='nothing'] .habit-card :is(.habit-main, .habit-text, .streak-row) {
+  display: contents;
+}
+
+/* the label names the habit; the dot-ring check takes the icon's corner */
+[data-theme='nothing'] .habit-card .habit-icon,
+[data-theme='nothing'] .habit-card .best {
+  display: none;
+}
+
+[data-theme='nothing'] .habit-card .habit-text h3 {
+  grid-area: title;
+  align-self: start;
+  overflow: hidden;
+  font-family: var(--font-label);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted);
+}
+
+[data-theme='nothing'] .habit-card .streak {
+  grid-area: num;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 64px;
+  color: inherit;
+}
+
+[data-theme='nothing'] .habit-card .streak-unit {
+  font-size: 9.5px;
+}
+
+[data-theme='nothing'] .habit-card .habit-text p {
+  grid-area: status;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-family: var(--font-label);
+  font-size: 10px;
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+[data-theme='nothing'] .habit-card.is-done .habit-text p {
+  padding-right: 56px;
+}
+
+[data-theme='nothing'] .habit-card .habit-text p.risk {
+  color: var(--risk-ink);
+}
+
+[data-theme='nothing'] .habit-card .habit-text p.risk::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  vertical-align: 1px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: blink 1.2s steps(2) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+[data-theme='nothing'] .habit-card .check-wrap {
+  grid-area: check;
+  align-self: start;
+  position: static;
+  margin: -4px -4px 0 0;
+}
+
+[data-theme='nothing'] .habit-card .ring,
+[data-theme='nothing'] .habit-card .ring > svg {
+  width: 50px !important;
+  height: 50px !important;
+}
+
+[data-theme='nothing'] .check-empty {
+  width: 10px;
+  height: 10px;
+  border: 0;
+  background: currentColor;
+  opacity: 0.3;
+}
+
+[data-theme='nothing'] .check-mark {
+  width: 30px;
+  height: 30px;
+  color: #000;
+}
+
+[data-theme='nothing'] .check-mark svg {
+  width: 16px;
+  height: 16px;
+}
+
+[data-theme='nothing'] .habit-card .undo {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+}
+
+[data-theme='nothing'] .undo {
+  font-family: var(--font-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ---------- Glyph strip (only rendered in this theme) ---------- */
+.glyph {
+  padding: 14px 16px 12px;
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.glyph-head {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-label);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.glyph-count {
+  color: var(--text);
+}
+
+.glyph-bars {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.glyph-bar i {
+  display: block;
+  height: 12px;
+  border-radius: 99px;
+  background: #4a1013;
+  animation: glyph-breathe 2.4s ease-in-out infinite;
+}
+
+.glyph-bar.lit i {
+  background: var(--text);
+  box-shadow: 0 0 10px 1px rgba(255, 255, 255, 0.5);
+  animation: none;
+}
+
+.glyph-bar.flash i {
+  animation: glyph-flash 0.7s ease-out;
+}
+
+.glyph-bar span {
+  display: block;
+  margin-top: 6px;
+  overflow: hidden;
+  font-family: var(--font-label);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted);
+}
+
+@keyframes glyph-breathe {
+  50% {
+    background: var(--red);
+    box-shadow: 0 0 8px rgba(215, 25, 33, 0.55);
+  }
+}
+
+@keyframes glyph-flash {
+  0% {
+    box-shadow: 0 0 0 2px #fff, 0 0 36px 12px rgba(255, 255, 255, 0.85);
+  }
+  100% {
+    box-shadow: 0 0 10px 1px rgba(255, 255, 255, 0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glyph-bar i,
+  .glyph-bar.flash i,
+  [data-theme='nothing'] .habit-card .habit-text p.risk::before {
+    animation: none;
+  }
+}

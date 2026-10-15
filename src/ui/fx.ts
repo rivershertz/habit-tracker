@@ -46,6 +46,14 @@ export function haptic(pattern: number | number[]): void {
 
 const base = { zIndex: 1000, disableForReducedMotion: true } as const;
 
+/** Confetti colors for the active theme: Nothing is monochrome with its red, Varsity uses felt-friendly bone and gold. */
+function paint(colors: string[]): { colors: string[]; shapes?: confetti.Shape[] } {
+  const theme = document.documentElement.dataset.theme;
+  if (theme === 'nothing') return { colors: ['#ffffff', '#ffffff', '#8f8f8f', '#d71921'], shapes: ['circle'] };
+  if (theme === 'varsity') return { colors: [colors[0], '#f1ead8', '#e8b53e', '#c8322f'] };
+  return { colors };
+}
+
 /** Confetti pop from a screen point, tinted with the habit color. */
 export function burst(x: number, y: number, color: string): void {
   if (reducedMotion()) return;
@@ -59,7 +67,7 @@ export function burst(x: number, y: number, color: string): void {
     ticks: 80,
     scalar: 0.85,
     origin,
-    colors: [color, '#ffffff', COLORS.xp],
+    ...paint([color, '#ffffff', COLORS.xp]),
   });
   confetti({
     ...base,
@@ -70,32 +78,32 @@ export function burst(x: number, y: number, color: string): void {
     scalar: 0.6,
     shapes: ['circle'],
     origin,
-    colors: [color],
+    colors: paint([color]).colors,
   });
 }
 
 /** Full-screen celebration for level-ups. */
 export function bigBurst(): void {
   if (reducedMotion()) return;
-  const colors = [COLORS.workout, COLORS.reading, COLORS.smoke, COLORS.xp, '#ffffff'];
+  const look = paint([COLORS.workout, COLORS.reading, COLORS.smoke, COLORS.xp, '#ffffff']);
   const end = Date.now() + 900;
   const frame = () => {
-    confetti({ ...base, particleCount: 5, angle: 60, spread: 60, origin: { x: 0, y: 0.75 }, colors });
-    confetti({ ...base, particleCount: 5, angle: 120, spread: 60, origin: { x: 1, y: 0.75 }, colors });
+    confetti({ ...base, particleCount: 5, angle: 60, spread: 60, origin: { x: 0, y: 0.75 }, ...look });
+    confetti({ ...base, particleCount: 5, angle: 120, spread: 60, origin: { x: 1, y: 0.75 }, ...look });
     if (Date.now() < end) requestAnimationFrame(frame);
   };
   frame();
-  confetti({ ...base, particleCount: 120, spread: 100, startVelocity: 45, origin: { x: 0.5, y: 0.5 }, colors });
+  confetti({ ...base, particleCount: 120, spread: 100, startVelocity: 45, origin: { x: 0.5, y: 0.5 }, ...look });
 }
 
 /** Fireworks from both top corners for epic+ achievements. */
 export function epicBurst(color: string): void {
   if (reducedMotion()) return;
-  const colors = [color, '#ffffff', COLORS.xp];
+  const look = paint([color, '#ffffff', COLORS.xp]);
   for (const x of [0.15, 0.5, 0.85]) {
-    confetti({ ...base, particleCount: 60, spread: 110, startVelocity: 38, ticks: 120, origin: { x, y: 0.15 }, colors });
+    confetti({ ...base, particleCount: 60, spread: 110, startVelocity: 38, ticks: 120, origin: { x, y: 0.15 }, ...look });
   }
-  confetti({ ...base, particleCount: 30, spread: 360, startVelocity: 20, ticks: 140, shapes: ['star'], scalar: 1.3, origin: { x: 0.5, y: 0.35 }, colors });
+  confetti({ ...base, particleCount: 30, spread: 360, startVelocity: 20, ticks: 140, shapes: look.shapes ?? ['star'], scalar: 1.3, origin: { x: 0.5, y: 0.35 }, colors: look.colors });
 }
 
 /** Small shower from the top (achievement unlocked). */
@@ -109,7 +117,7 @@ export function sparkle(color: string): void {
     ticks: 90,
     scalar: 0.8,
     origin: { x: 0.5, y: 0.08 },
-    colors: [color, '#ffffff', COLORS.xp],
+    ...paint([color, '#ffffff', COLORS.xp]),
   });
 }
 

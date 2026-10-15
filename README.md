@@ -7,7 +7,12 @@ and type: a **daily check-in** you tap in, or a **quit counter** that counts up 
 — with XP, levels, ranks, streaks, a calendar heatmap, 50+ achievements in five rarity tiers (Common → Rare → Epic →
 Legendary → Mythic), confetti and plenty of micro-interactions.
 
-Everything lives in your browser's `localStorage` (key `ascend:v1`). There is no backend and no account.
+Three themes, switchable from the bottom of the Journey screen: **Glow** (the original dark neon), **Varsity**
+(green felt, stitched patches, jersey-number streaks) and **Nothing** (dot-matrix numbers, a widget grid and a Glyph
+strip that lights up as you log). Each theme is a stylesheet in `src/themes/` keyed off `data-theme` on `<html>`.
+
+Everything lives in your browser's `localStorage` (key `ascend:v1`, plus `ascend:theme` for the theme). There is no
+backend and no account.
 
 ## Develop
 

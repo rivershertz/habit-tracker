@@ -6,6 +6,7 @@ import { useStore } from '../store/store';
 import { CountUp } from './CountUp';
 import { COLORS, groupColor, TIER_META } from './fx';
 import { Ring } from './Ring';
+import { ThemePicker } from './ThemePicker';
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
 const item = {
@@ -61,9 +62,9 @@ export function Journey() {
                 <span>{s.label}</span>
                 <b>{s.value.toLocaleString()}</b>
               </div>
-              <div className="bar">
+              <div className="bar" style={{ ['--p' as string]: s.value / max }}>
                 <motion.i
-                  style={{ background: s.color, boxShadow: `0 0 10px ${s.color}66` }}
+                  style={{ ['--accent' as string]: s.color }}
                   initial={{ width: 0 }}
                   animate={{ width: `${(s.value / max) * 100}%` }}
                   transition={{ type: 'spring', stiffness: 60, damping: 16, delay: 0.2 }}
@@ -114,7 +115,9 @@ export function Journey() {
         return (
           <motion.section key={g.id} variants={item}>
             <h4 className="section-title row">
-              <span style={{ color }}>{g.label}</span>
+              <span className="group-name" style={{ ['--accent' as string]: color }}>
+                {g.label}
+              </span>
               <span className="muted">
                 {done}/{all.length}
               </span>
@@ -140,6 +143,11 @@ export function Journey() {
           </motion.section>
         );
       })}
+
+      <motion.section className="card" variants={item}>
+        <h4 className="section-title">Theme</h4>
+        <ThemePicker />
+      </motion.section>
     </motion.div>
   );
 }
