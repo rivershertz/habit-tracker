@@ -1,4 +1,4 @@
-# [Ascend](https://rivershertz.github.io/habit-tracker/)
+# [Ascend](https://rivershertz.github.io/ascend/)
 
 A dark, gamified habit tracker. Level up by showing up.
 
