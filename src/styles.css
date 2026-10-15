@@ -1164,18 +1164,85 @@ input:focus-visible {
 
 /* ---------- onboarding ---------- */
 .onboard {
-  max-width: 440px;
+  max-width: 480px;
   min-height: 100dvh;
   margin: 0 auto;
-  padding: calc(var(--safe-top) + 24px) 20px calc(24px + var(--safe-bottom));
+  padding: calc(var(--safe-top) + 20px) 20px calc(20px + var(--safe-bottom));
   display: flex;
   flex-direction: column;
+}
+
+.onboard-page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.onboard-welcome {
   align-items: center;
   justify-content: center;
   text-align: center;
 }
 
+/* the logo, with the goals you could pick drifting around it */
+.onboard-hero {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 240px;
+  height: 240px;
+  margin: 0 0 18px;
+}
+
+.onboard-hero::before {
+  content: '';
+  position: absolute;
+  inset: 52px;
+  border-radius: 50%;
+  background: var(--halo, conic-gradient(from 0deg, #3ee6b0, #9b7bff, #ff7a45, #3ee6b0));
+  filter: blur(calc(34px * var(--glow)));
+  opacity: calc(0.45 * var(--glow));
+  animation: spin 9s linear infinite;
+}
+
+.orbit {
+  position: absolute;
+  inset: 0;
+  animation: spin 46s linear infinite;
+}
+
+.orbit span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34px;
+  height: 34px;
+  margin: -17px;
+  transform: rotate(calc(var(--i) / var(--n) * 1turn)) translateY(-104px) rotate(calc(var(--i) / var(--n) * -1turn));
+}
+
+.orbit b {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 17px;
+  border-radius: var(--orbit-radius, 50%);
+  background: var(--orbit-bg, var(--surface-2));
+  border: var(--orbit-border, 1px solid var(--border));
+  filter: var(--icon-filter, none);
+  animation: spin 46s linear infinite reverse, bob 3.2s ease-in-out infinite;
+  animation-delay: 0s, calc(var(--i) * -0.4s);
+}
+
+@keyframes bob {
+  50% {
+    translate: 0 -5px;
+  }
+}
+
 .logo {
+  position: relative;
   display: grid;
   place-items: center;
   width: 92px;
@@ -1187,71 +1254,224 @@ input:focus-visible {
 }
 
 .onboard h1 {
-  margin-top: 22px;
   font-family: var(--wordmark-font, var(--font-display));
   font-variation-settings: var(--wordmark-variation, normal);
   font-size: var(--wordmark-size, 44px);
   font-weight: 800;
   line-height: 1;
   letter-spacing: var(--wordmark-tracking, -0.05em);
+  background: var(--wordmark-paint, linear-gradient(120deg, #fff 30%, #c9b8ff 65%, #7af5cd));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .tagline {
-  margin-top: 4px;
+  margin-top: 6px;
   font-size: 17px;
   color: var(--muted);
 }
 
-.habit-chips {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin: 24px 0 28px;
+.onboard .btn {
+  flex: none;
 }
 
-.habit-chips span {
-  --accent: var(--c);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 13px;
-  border-radius: var(--chip-radius, 99px);
-  font-family: var(--font-label);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: var(--label-tracking, normal);
-  text-transform: var(--label-case, none);
-  color: var(--chip-ink, var(--tint));
-  background: var(--chip-bg, color-mix(in srgb, var(--tint) var(--chip-fill, 13%), transparent));
-}
-
-.onboard-card {
-  --accent: var(--smoke);
+.onboard-vibe {
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  margin: 30px 0 24px;
   text-align: left;
 }
 
-.onboard-card label {
-  font-weight: 700;
+.onboard-vibe .field-label {
+  display: block;
 }
 
-.onboard-card input {
-  width: 100%;
-  padding: 14px;
-  border-radius: var(--input-radius, 14px);
-  font: inherit;
-  color: var(--text);
-  background: var(--input-bg, rgba(0, 0, 0, 0.35));
+/* goals + summary steps */
+.onboard-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.onboard-top-spacer {
+  width: 40px;
+}
+
+.onboard-steps {
+  display: flex;
+  gap: 6px;
+}
+
+.onboard-steps i {
+  width: 22px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--track, rgba(255, 255, 255, 0.12));
+  transition: width 0.3s, background 0.3s;
+}
+
+.onboard-steps i.on {
+  width: 34px;
+  background: var(--steps-on, linear-gradient(90deg, #3ee6b0, #9b7bff));
+  box-shadow: 0 0 calc(12px * var(--glow)) rgba(155, 123, 255, 0.6);
+}
+
+.onboard-title {
+  font-family: var(--font-display);
+  font-size: var(--onboard-title-size, 30px);
+  font-weight: var(--hello-weight, 800);
+  line-height: 1.05;
+  letter-spacing: var(--display-tracking, -0.03em);
+  text-transform: var(--display-case, none);
+}
+
+.onboard-sub {
+  margin: 8px 0 22px;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.goal-section {
+  margin-bottom: 18px;
+}
+
+.goal-section .section-title.row {
+  align-items: baseline;
+  gap: 12px;
+  margin: 0 2px 10px;
+}
+
+.goal-section .section-title .muted {
+  font-family: var(--font-body);
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.goal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.goal-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 10px 12px;
+  text-align: left;
+  border-radius: var(--tile-radius, 18px);
+  background: var(--surface);
   border: 1px solid var(--border);
-  color-scheme: dark;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, color 0.2s;
 }
 
-.onboard-card .hint {
-  margin: 0 0 6px;
+.goal-emoji {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  font-size: 19px;
+  border-radius: var(--icon-radius, 12px);
+  background: color-mix(in srgb, var(--tint) 14%, transparent);
+  filter: var(--icon-filter, none);
+}
+
+.goal-name {
+  min-width: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.goal-tile.on {
+  color: var(--tile-on-ink, var(--text));
+  background: var(
+    --tile-on-bg,
+    radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--tint) 30%, transparent), transparent 70%),
+    color-mix(in srgb, var(--tint) 10%, var(--surface))
+  );
+  border-color: var(--tile-on-border, var(--tint));
+  box-shadow: 0 0 calc(22px * var(--glow)) color-mix(in srgb, var(--tint) 35%, transparent);
+}
+
+.goal-check {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: var(--check-ink, #0b0b10);
+  background: var(--check-bg, var(--tint));
+  box-shadow: 0 0 0 3px var(--bg);
+}
+
+.onboard .add-habit {
+  margin-top: 4px;
+}
+
+.onboard-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: auto -20px 0;
+  padding: 24px 20px calc(4px + var(--safe-bottom));
+  background: linear-gradient(transparent, var(--bg) 45%);
+}
+
+.quest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+}
+
+.quest-row {
+  padding: 14px;
+}
+
+.quest-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.quest-main b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--quest-name-size, 17px);
+  letter-spacing: var(--display-tracking, -0.01em);
+  text-transform: var(--display-case, none);
+}
+
+.quest-main small {
+  font-family: var(--font-label);
+  font-size: 12px;
+  letter-spacing: var(--label-tracking, normal);
+  text-transform: var(--label-case, none);
+  color: var(--tint);
+}
+
+.quest-since {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.quest-since .text-input {
+  color-scheme: dark;
 }
 
 /* ---------- celebrations ---------- */
@@ -1410,7 +1630,10 @@ input:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .xp-fill::after,
-  .toast-shine {
+  .toast-shine,
+  .onboard-hero::before,
+  .orbit,
+  .orbit b {
     animation: none;
   }
 }

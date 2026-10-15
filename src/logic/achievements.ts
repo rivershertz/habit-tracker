@@ -1,7 +1,7 @@
 import { daysBetween } from './dates';
 import { bestRunDays, bestRunDaysOf } from './smoking';
 import { computeStreaks, streakLengthAt } from './streaks';
-import { datesOf, isQuit, runsOf, type Habit, type State } from './types';
+import { datesOf, isQuit, runsOf, tracksSmoking, type Habit, type State } from './types';
 import { levelForXp, perfectDays, totalXp } from './xp';
 
 /** A habit id, or one of the fixed groups below. */
@@ -235,7 +235,7 @@ const SPECIAL_DEFS: AchievementDef[] = [
     group: SPECIAL_GROUP,
     tier: 'common',
     title: 'Perfect Day',
-    desc: 'Hit every habit and stay smoke-free on the same day',
+    desc: 'Hit every habit on the same day',
     icon: '⭐',
     value: (c) => c.perfect.length,
     target: 1,
@@ -334,7 +334,8 @@ const SPECIAL_DEFS: AchievementDef[] = [
 
 /** Every achievement for the current set of habits, in display order. */
 export function achievementDefs(state: State): AchievementDef[] {
-  return [...SMOKE_DEFS, ...state.habits.flatMap(habitDefs), ...SPECIAL_DEFS, ...MASTERY_DEFS];
+  const smoke = tracksSmoking(state) ? SMOKE_DEFS : [];
+  return [...smoke, ...state.habits.flatMap(habitDefs), ...SPECIAL_DEFS, ...MASTERY_DEFS];
 }
 
 export function evaluateAchievements(state: State, now: number): AchievementStatus[] {

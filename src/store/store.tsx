@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { emptyState, type State } from '../logic/types';
+import { emptyState, tracksSmoking, type State } from '../logic/types';
 import { reduce, type Action } from './reducer';
 import { loadState, saveState } from './storage';
 
@@ -20,6 +20,7 @@ interface Store {
   dispatch: (a: Action) => void;
   /** false when localStorage is unavailable and progress can't be saved */
   persisted: boolean;
+  /** false for a first-timer who hasn't picked any goals yet */
   onboarded: boolean;
 }
 
@@ -58,7 +59,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<Store>(
-    () => ({ state, now, dispatch, persisted, onboarded: state.smokingRuns.length > 0 }),
+    () => ({ state, now, dispatch, persisted, onboarded: state.habits.length > 0 || tracksSmoking(state) }),
     [state, now, dispatch, persisted],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

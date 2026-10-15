@@ -1,6 +1,6 @@
 import { freeBlockDates, smokeFreeBlockDates } from './smoking';
 import { streakLengthAt } from './streaks';
-import { datesOf, isQuit, runsOf, type HabitId, type State } from './types';
+import { datesOf, isQuit, runsOf, tracksSmoking, type HabitId, type State } from './types';
 
 export const XP_CHECKIN = 10;
 export const XP_STREAK_BONUS_CAP = 10;
@@ -27,10 +27,13 @@ function habitXp(dates: string[]): number {
 const goodDays = (state: State, id: HabitId, quit: boolean, now: number): string[] =>
   quit ? freeBlockDates(runsOf(state, id), now) : datesOf(state, id);
 
-/** Smoke-free days on which every habit that existed that day was done. */
+/** Days on which every habit that existed that day was done (and, for legacy users, that were smoke-free). */
 export function perfectDays(state: State, now: number): string[] {
   const sets = state.habits.map((h) => ({ since: h.since, days: new Set(goodDays(state, h.id, isQuit(h), now)) }));
-  return smokeFreeBlockDates(state, now).filter((d) => {
+  const candidates = tracksSmoking(state)
+    ? smokeFreeBlockDates(state, now)
+    : [...new Set(sets.flatMap((h) => [...h.days]))].sort();
+  return candidates.filter((d) => {
     const active = sets.filter((h) => h.since <= d);
     return active.length > 0 && active.every((h) => h.days.has(d));
   });

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { evaluateAchievements } from './achievements';
 import { DAY_MS } from './smoking';
-import { emptyState, type Habit, type State } from './types';
+import { legacyState, type Habit, type State } from './types';
 import { perfectDays, totalXp, xpBreakdown } from './xp';
 import { reduce } from '../store/reducer';
 import { loadState, KEY } from '../store/storage';
@@ -9,7 +9,7 @@ import { loadState, KEY } from '../store/storage';
 const T0 = new Date(2026, 9, 1, 8, 0).getTime();
 const sugar: Habit = { id: 'h-sugar', name: 'No sugar', icon: '🍬', color: '#ff5fa2', since: '2026-09-01', kind: 'quit' };
 
-const withSugar = (start = T0): State => reduce(emptyState(), { type: 'addHabit', habit: sugar, quitStart: start });
+const withSugar = (start = T0): State => reduce(legacyState(), { type: 'addHabit', habit: sugar, quitStart: start });
 
 describe('quit habits', () => {
   it('addHabit starts the counter and keeps no check-ins', () => {
@@ -19,7 +19,7 @@ describe('quit habits', () => {
   });
 
   it('a quit habit needs a start time', () => {
-    const s = emptyState();
+    const s = legacyState();
     expect(reduce(s, { type: 'addHabit', habit: sugar })).toBe(s);
   });
 

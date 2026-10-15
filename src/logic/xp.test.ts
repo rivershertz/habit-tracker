@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { emptyState, type State } from './types';
+import { emptyState, legacyState, type State } from './types';
 import { DAY_MS } from './smoking';
 import { totalXp, xpBreakdown, levelForXp, thresholdForLevel, perfectDays } from './xp';
 
 const T0 = new Date(2026, 9, 1, 8, 0).getTime();
-const mk = (p: Partial<State>): State => ({ ...emptyState(), ...p });
+const mk = (p: Partial<State>): State => ({ ...legacyState(), ...p });
 
 describe('xp', () => {
   it('is zero for an empty state', () => {
-    expect(totalXp(emptyState(), T0)).toBe(0);
+    expect(totalXp(legacyState(), T0)).toBe(0);
   });
 
   it('awards 10 xp for a single check-in', () => {
@@ -45,7 +45,7 @@ describe('xp with custom habits', () => {
   const meditate = { id: 'h-med', name: 'Meditate', icon: '🧘', color: '#4da3ff', since: '2026-10-02' };
 
   it('awards check-in xp to custom habits', () => {
-    const s = mk({ habits: [...emptyState().habits, meditate], checkins: { workout: [], reading: [], 'h-med': ['2026-10-02'] } });
+    const s = mk({ habits: [...legacyState().habits, meditate], checkins: { workout: [], reading: [], 'h-med': ['2026-10-02'] } });
     expect(xpBreakdown(s, T0).habits['h-med']).toBe(10);
     expect(totalXp(s, T0)).toBe(10);
   });
@@ -53,11 +53,28 @@ describe('xp with custom habits', () => {
   it('a custom habit only joins perfect days from the day it was added', () => {
     const s = mk({
       smokingRuns: [{ start: T0 }],
-      habits: [...emptyState().habits, meditate],
+      habits: [...legacyState().habits, meditate],
       checkins: { workout: ['2026-10-01', '2026-10-02'], reading: ['2026-10-01', '2026-10-02'], 'h-med': [] },
     });
     // 10-01 predates the habit, so it stays perfect; 10-02 now needs a meditation check-in too
     expect(perfectDays(s, T0 + 3 * DAY_MS)).toEqual(['2026-10-01']);
+  });
+});
+
+describe('xp for a first-timer (no smoke counter)', () => {
+  const run = { id: 'h-run', name: 'Run', icon: '🏃', color: '#4da3ff', since: '2026-10-01' };
+  const sugar = { id: 'h-sugar', name: 'No sugar', icon: '🍬', color: '#ff5fa2', since: '2026-10-01', kind: 'quit' as const };
+
+  it('counts a perfect day once every habit is done, without smoke-free days', () => {
+    const s: State = { ...emptyState(), habits: [run], checkins: { 'h-run': ['2026-10-01'] } };
+    expect(perfectDays(s, T0)).toEqual(['2026-10-01']);
+    expect(xpBreakdown(s, T0).smoke).toBe(0);
+  });
+
+  it('waits for a quit habit to complete its free day', () => {
+    const s: State = { ...emptyState(), habits: [run, sugar], checkins: { 'h-run': ['2026-10-01'] }, quitRuns: { 'h-sugar': [{ start: T0 }] } };
+    expect(perfectDays(s, T0 + 0.5 * DAY_MS)).toEqual([]);
+    expect(perfectDays(s, T0 + 1.5 * DAY_MS)).toEqual(['2026-10-01']);
   });
 });
 

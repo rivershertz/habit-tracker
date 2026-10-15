@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { emptyState } from '../logic/types';
+import { emptyState, legacyState } from '../logic/types';
 import { KEY, loadState, saveState } from './storage';
 
 const memory = (init: Record<string, string> = {}) => {
@@ -14,7 +14,7 @@ const memory = (init: Record<string, string> = {}) => {
 describe('storage', () => {
   it('round-trips state', () => {
     const m = memory();
-    const s = { ...emptyState(), smokingRuns: [{ start: 1000 }] };
+    const s = { ...legacyState(), smokingRuns: [{ start: 1000 }] };
     expect(saveState(s, m)).toBe(true);
     expect(loadState(m)).toEqual(s);
   });
@@ -49,10 +49,10 @@ describe('storage', () => {
     expect(s.seenLevel).toBe(1);
   });
 
-  it('migrates v1 data (no habits list) to v2 with the built-ins', () => {
+  it('migrates v1 data (no habits list) to v3 with the built-ins', () => {
     const raw = { version: 1, smokingRuns: [{ start: 5 }], checkins: { workout: ['2026-10-01'], reading: [] }, seenAchievements: ['first-workout'], seenLevel: 2 };
     const s = loadState(memory({ [KEY]: JSON.stringify(raw) }))!;
-    expect(s.version).toBe(2);
+    expect(s.version).toBe(3);
     expect(s.habits.map((h) => h.id)).toEqual(['workout', 'reading']);
     expect(s.checkins.workout).toEqual(['2026-10-01']);
     expect(s.seenAchievements).toEqual(['first-workout']);
@@ -73,6 +73,16 @@ describe('storage', () => {
     expect(s.checkins).toEqual({ workout: [], reading: [], 'h-med': ['2026-10-02'] });
   });
 
+  it('v3 keeps exactly the stored habits: none for a first-timer, built-ins only if stored', () => {
+    const m = memory();
+    saveState(emptyState(), m);
+    expect(loadState(m)!.habits).toEqual([]);
+    const med = { id: 'h-med', name: 'Meditate', icon: '🧘', color: '#4da3ff', since: '2026-10-01' };
+    const withBuiltIn = { ...emptyState(), habits: [legacyState().habits[1], med], checkins: { reading: ['2026-10-02'], 'h-med': [] } };
+    saveState(withBuiltIn, m);
+    expect(loadState(m)).toEqual(withBuiltIn);
+  });
+
   it('survives storage that throws', () => {
     const boom = {
       getItem: () => {
@@ -83,11 +93,11 @@ describe('storage', () => {
       },
     };
     expect(loadState(boom)).toBeNull();
-    expect(saveState(emptyState(), boom)).toBe(false);
+    expect(saveState(legacyState(), boom)).toBe(false);
   });
 
   it('works when storage is unavailable entirely', () => {
     expect(loadState(undefined)).toBeNull();
-    expect(saveState(emptyState(), undefined)).toBe(false);
+    expect(saveState(legacyState(), undefined)).toBe(false);
   });
 });

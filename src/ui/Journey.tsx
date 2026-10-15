@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { useState } from 'react';
 import { evaluateAchievements, MASTERY_GROUP, SMOKE_GROUP, SPECIAL_GROUP, TIERS, type Tier } from '../logic/achievements';
+import { tracksSmoking } from '../logic/types';
 import { levelForXp, totalXp, xpBreakdown } from '../logic/xp';
 import { useStore } from '../store/store';
 import { CountUp } from './CountUp';
@@ -21,13 +22,14 @@ export function Journey() {
   const b = xpBreakdown(state, now);
   const achievements = evaluateAchievements(state, now);
   const [tier, setTier] = useState<Tier | null>(null);
+  const smoking = tracksSmoking(state);
   const sources = [
-    { label: 'Smoke-free days', value: b.smoke, color: COLORS.smoke },
+    ...(smoking ? [{ label: 'Smoke-free days', value: b.smoke, color: COLORS.smoke }] : []),
     ...state.habits.map((h) => ({ label: h.name, value: b.habits[h.id] ?? 0, color: h.color })),
     { label: 'Perfect days', value: b.perfect, color: COLORS.xp },
   ];
   const groups = [
-    { id: SMOKE_GROUP, label: 'Smoke-free' },
+    ...(smoking ? [{ id: SMOKE_GROUP, label: 'Smoke-free' }] : []),
     ...state.habits.map((h) => ({ id: h.id, label: h.name })),
     { id: SPECIAL_GROUP, label: 'Feats' },
     { id: MASTERY_GROUP, label: 'Mastery' },

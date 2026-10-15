@@ -2,10 +2,11 @@
 
 A dark, gamified habit tracker. Level up by showing up.
 
-Tracks **days smoke-free**, **workout days**, **reading days** and any habits you add yourself (name, emoji, color,
-and type: a **daily check-in** you tap in, or a **quit counter** that counts up on its own until you slip)
-— with XP, levels, ranks, streaks, a calendar heatmap, 50+ achievements in five rarity tiers (Common → Rare → Epic →
-Legendary → Mythic), confetti and plenty of micro-interactions.
+Tracks the habits **you** pick: first launch walks you through a short onboarding where you choose a look and your
+goals — suggestions like Workout, Meditate or Smoke-free, or your own (name, emoji, color, and type: a **daily
+check-in** you tap in, or a **quit counter** that counts up on its own until you slip) — with XP, levels, ranks,
+streaks, a calendar heatmap, 50+ achievements in five rarity tiers (Common → Rare → Epic → Legendary → Mythic),
+confetti and plenty of micro-interactions.
 
 Three themes, switchable from the bottom of the Journey screen: **Glow** (the original dark neon), **Varsity**
 (green felt, stitched patches, jersey-number streaks) and **Nothing** (dot-matrix numbers, a widget grid and a Glyph
@@ -30,12 +31,12 @@ pnpm build      # type-check + production build into dist/
 - `src/store` — reducer, `localStorage` persistence (validates and repairs whatever it reads), React provider.
 - `src/ui` — screens (Today, Journey, habit detail, onboarding), celebrations and FX.
 
-XP: check-in = 10 + streak bonus (max +10); smoke-free / quit-counter free day = 15; perfect day (every habit done
+XP: check-in = 10 + streak bonus (max +10); quit-counter free day = 15; perfect day (every habit done
 that day — checked in, or a full free day) = +20.
-A custom habit only joins the perfect-day requirement from the day it was added. Removing a custom habit deletes its
-history; Workout and Reading are built in and can't be removed.
+A habit only joins the perfect-day requirement from the day it was added. Removing a habit deletes its history.
 
-Saved data is schema `version: 2`; version 1 data (before custom habits) is migrated on load.
+Saved data is schema `version: 3`, where a new user starts with no habits. Older data is migrated on load: users from
+before v3 keep the original built-in Workout, Reading and smoke-free counter exactly as they were.
 Level *n* needs `round(40·(n−1)^1.6)` total XP.
 
 ## Deploy (GitHub Pages)

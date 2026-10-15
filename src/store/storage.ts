@@ -1,4 +1,4 @@
-import { emptyState, type Habit, type SmokingRun, type State } from '../logic/types';
+import { BUILT_IN_IDS, defaultHabits, emptyState, legacyState, type Habit, type SmokingRun, type State } from '../logic/types';
 
 export const KEY = 'ascend:v1';
 
@@ -43,14 +43,19 @@ export function cleanHabit(v: unknown): Habit | null {
   return habit;
 }
 
-/** Validate + repair an untrusted blob (v1 is migrated). Returns null when it can't be a State at all. */
+/**
+ * Validate + repair an untrusted blob. Returns null when it can't be a State at all.
+ * v1/v2 always had Workout and Reading built in, so they're migrated with both; from v3 on,
+ * the built-ins are only kept by users who already had them (they're stored by id).
+ */
 export function sanitize(raw: unknown): State | null {
-  if (!isObj(raw) || (raw.version !== 1 && raw.version !== 2)) return null;
+  if (!isObj(raw) || (raw.version !== 1 && raw.version !== 2 && raw.version !== 3)) return null;
   const checkins = isObj(raw.checkins) ? raw.checkins : {};
-  const base = emptyState();
+  const base = raw.version === 3 ? emptyState() : legacyState();
   const ids = new Set(base.habits.map((h) => h.id));
   for (const h of Array.isArray(raw.habits) ? raw.habits : []) {
-    const habit = cleanHabit(h);
+    const builtIn = isObj(h) && typeof h.id === 'string' && BUILT_IN_IDS.has(h.id);
+    const habit = builtIn ? defaultHabits().find((d) => d.id === h.id)! : cleanHabit(h);
     if (habit && !ids.has(habit.id)) {
       ids.add(habit.id);
       base.habits.push(habit);

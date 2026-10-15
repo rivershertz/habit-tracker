@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import { fromDateKey, todayKey } from '../logic/dates';
 import { currentRun, currentRunOf } from '../logic/smoking';
-import { isQuit, runsOf } from '../logic/types';
+import { isQuit, runsOf, tracksSmoking } from '../logic/types';
 import { perfectDays, XP_PERFECT } from '../logic/xp';
 import { useStore } from '../store/store';
 import { COLORS } from './fx';
@@ -27,8 +27,9 @@ export function Today({ onOpen, onAdd }: { onOpen: (d: DetailId) => void; onAdd:
   const { state, now } = useStore();
   const { theme } = useTheme();
   const today = todayKey(now);
+  const smoking = tracksSmoking(state);
   const quests = [
-    { id: 'smoke', label: 'Smoke-free', done: currentRun(state, now).active, color: COLORS.smoke },
+    ...(smoking ? [{ id: 'smoke', label: 'Smoke-free', done: currentRun(state, now).active, color: COLORS.smoke }] : []),
     ...state.habits.map((h) => ({
       id: h.id,
       label: h.name,
@@ -38,7 +39,7 @@ export function Today({ onOpen, onAdd }: { onOpen: (d: DetailId) => void; onAdd:
   ];
   const doneCount = quests.filter((q) => q.done).length;
   const allDone = doneCount === quests.length;
-  // the bonus only exists once the smoke-free day for `today` has completed, so say so honestly
+  // the bonus only exists once every quit counter has a full day for `today`, so say so honestly
   const perfectBonusCounted = perfectDays(state, now).includes(today);
   // the widget grid (Nothing theme) pairs check-in tiles; an odd one out spans the full row
   const checkIns = state.habits.filter((h) => !isQuit(h));
@@ -74,15 +75,17 @@ export function Today({ onOpen, onAdd }: { onOpen: (d: DetailId) => void; onAdd:
         </motion.div>
       )}
 
-      <motion.div className="slot slot-wide" variants={item}>
-        <QuitCard
-          label="Smoke-free"
-          glyph={<WindIcon size={14} />}
-          color={COLORS.smoke}
-          runs={state.smokingRuns}
-          onOpen={() => onOpen('smoke')}
-        />
-      </motion.div>
+      {smoking && (
+        <motion.div className="slot slot-wide" variants={item}>
+          <QuitCard
+            label="Smoke-free"
+            glyph={<WindIcon size={14} />}
+            color={COLORS.smoke}
+            runs={state.smokingRuns}
+            onOpen={() => onOpen('smoke')}
+          />
+        </motion.div>
+      )}
       {state.habits.map((h) => (
         <motion.div
           key={h.id}
@@ -111,7 +114,7 @@ export function Today({ onOpen, onAdd }: { onOpen: (d: DetailId) => void; onAdd:
         <motion.p className="perfect slot-wide" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
           {perfectBonusCounted
             ? `⭐ Perfect day — +${XP_PERFECT} XP bonus earned`
-            : `⭐ Every goal hit — your +${XP_PERFECT} XP Perfect Day bonus lands once today's smoke-free day completes`}
+            : `⭐ Every goal hit — your +${XP_PERFECT} XP Perfect Day bonus lands once today's ${smoking ? 'smoke-free' : 'free'} day completes`}
         </motion.p>
       )}
     </motion.div>

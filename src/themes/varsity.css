@@ -247,3 +247,76 @@
   outline: 2px dashed rgba(241, 234, 216, 0.6);
   outline-offset: -12px;
 }
+
+/* ---------- onboarding: a letterman locker room ---------- */
+:root[data-theme='varsity'] {
+  --logo-a: var(--gold);
+  --logo-b: var(--varsity-red);
+  --steps-on: var(--gold);
+  --onboard-title-size: 42px;
+  --quest-name-size: 22px;
+  --orbit-bg: var(--surface-2);
+  --orbit-border: 0;
+  --tile-on-ink: var(--bone);
+  --tile-on-border: transparent;
+  --check-bg: var(--gold);
+  --check-ink: var(--bg);
+}
+
+/* the wordmark is tackle twill: bone fill, red stitch, a hard felt shadow */
+[data-theme='varsity'] .onboard h1 {
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--bone);
+  background: none;
+  -webkit-text-stroke: 0.07em var(--varsity-red);
+  paint-order: stroke fill;
+  text-shadow: 0.06em 0.06em 0 var(--felt-deep);
+}
+
+[data-theme='varsity'] .tagline {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* every goal is a felt patch, stitched on once you pick it */
+[data-theme='varsity'] :is(.orbit b, .goal-tile) {
+  outline: 1.5px dashed rgba(241, 234, 216, 0.3);
+  outline-offset: -5px;
+}
+
+[data-theme='varsity'] .goal-tile {
+  border: 0;
+  box-shadow: 0 3px 0 var(--felt-deep);
+}
+
+[data-theme='varsity'] .goal-tile.on {
+  background: var(--tint);
+  outline-color: rgba(241, 234, 216, 0.75);
+  box-shadow: 0 3px 0 var(--felt-deep);
+}
+
+[data-theme='varsity'] .goal-name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+[data-theme='varsity'] .goal-emoji {
+  border-radius: 50%;
+  background: var(--felt-deep);
+}
+
+[data-theme='varsity'] .onboard-steps i {
+  border-radius: 2px;
+}
+
+[data-theme='varsity'] .quest-main small {
+  color: var(--gold);
+}

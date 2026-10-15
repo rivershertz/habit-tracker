@@ -2,7 +2,7 @@ import type { EmojiStyle, Theme } from 'emoji-picker-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { toDateTimeInput, todayKey } from '../logic/dates';
-import { HABIT_COLORS, HABIT_EMOJIS, type HabitKind } from '../logic/types';
+import { HABIT_COLORS, HABIT_EMOJIS, newHabitId, type Habit, type HabitKind } from '../logic/types';
 import { HABIT_NAME_MAX } from '../store/storage';
 import { useStore } from '../store/store';
 import { originOf } from './actions';
@@ -11,10 +11,17 @@ import { burst, haptic } from './fx';
 // the full picker is big, so it only loads when opened
 const EmojiPicker = lazy(() => import('emoji-picker-react'));
 
-const newId = () => `h-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+interface Props {
+  onClose: () => void;
+  /** onboarding collects habits instead of adding them: called with the habit (and a quit habit's start) */
+  onCreate?: (habit: Habit, quitStart?: number) => void;
+  /** habits to check names and colors against (default: the ones already tracked) */
+  taken?: Pick<Habit, 'name' | 'color'>[];
+}
 
-export function AddHabit({ onClose }: { onClose: () => void }) {
+export function AddHabit({ onClose, onCreate, taken }: Props) {
   const { state, now, dispatch } = useStore();
+  const habits = taken ?? state.habits;
   const [kind, setKind] = useState<HabitKind>('check');
   const [name, setName] = useState('');
   const [maxMs] = useState(() => Date.now());
@@ -24,10 +31,10 @@ export function AddHabit({ onClose }: { onClose: () => void }) {
   const customIcon = !HABIT_EMOJIS.includes(icon);
   // start on a color no habit is using yet
   const [color, setColor] = useState(
-    () => HABIT_COLORS.find((c) => !state.habits.some((h) => h.color === c)) ?? HABIT_COLORS[0],
+    () => HABIT_COLORS.find((c) => !habits.some((h) => h.color === c)) ?? HABIT_COLORS[0],
   );
   const trimmed = name.trim();
-  const duplicate = state.habits.some((h) => h.name.toLowerCase() === trimmed.toLowerCase());
+  const duplicate = habits.some((h) => h.name.toLowerCase() === trimmed.toLowerCase());
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -43,8 +50,9 @@ export function AddHabit({ onClose }: { onClose: () => void }) {
     if (!trimmed || duplicate) return;
     const parsed = new Date(since).getTime();
     const quitStart = Number.isFinite(parsed) ? Math.min(parsed, Date.now()) : Date.now();
-    const habit = { id: newId(), name: trimmed, icon, color, since: todayKey(now), ...(kind === 'quit' ? { kind } : {}) };
-    dispatch({ type: 'addHabit', habit, quitStart: kind === 'quit' ? quitStart : undefined });
+    const habit: Habit = { id: newHabitId(), name: trimmed, icon, color, since: todayKey(now), ...(kind === 'quit' ? { kind } : {}) };
+    if (onCreate) onCreate(habit, kind === 'quit' ? quitStart : undefined);
+    else dispatch({ type: 'addHabit', habit, quitStart: kind === 'quit' ? quitStart : undefined });
     const o = originOf(el);
     burst(o.x, o.y, color);
     haptic([12, 40, 18]);
@@ -109,7 +117,7 @@ export function AddHabit({ onClose }: { onClose: () => void }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        {duplicate && <p className="field-error">You already track a habit with that name.</p>}
+        {duplicate && <p className="field-error">You already {onCreate ? 'picked' : 'track'} a habit with that name.</p>}
 
         <span className="field-label">Icon</span>
         <div className="emoji-grid" role="radiogroup" aria-label="Icon">

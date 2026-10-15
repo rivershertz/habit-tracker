@@ -481,3 +481,83 @@
     animation: none;
   }
 }
+
+/* ---------- onboarding: the device boot screen ---------- */
+:root[data-theme='nothing'] {
+  --logo-a: var(--text);
+  --logo-b: var(--text);
+  --steps-on: var(--text);
+  --onboard-title-size: 28px;
+  --orbit-bg: var(--surface);
+  --orbit-border: 0;
+  --tile-on-bg: var(--text);
+  --tile-on-ink: #000;
+  --tile-on-border: transparent;
+  --check-bg: var(--red);
+  --check-ink: #fff;
+}
+
+[data-theme='nothing'] .onboard h1 {
+  font-weight: 900;
+  color: var(--text);
+  background: none;
+}
+
+[data-theme='nothing'] .tagline {
+  font-family: var(--font-label);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* a dotted track for the orbit, and the one red light on the logo */
+[data-theme='nothing'] .onboard-hero::after {
+  content: '';
+  position: absolute;
+  inset: 16px;
+  border: 2px dotted #333;
+  border-radius: 50%;
+}
+
+[data-theme='nothing'] .logo::after {
+  content: '';
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 10px var(--red);
+}
+
+[data-theme='nothing'] .onboard-steps i {
+  width: 8px;
+  height: 8px;
+}
+
+[data-theme='nothing'] .onboard-steps i.on {
+  width: 8px;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}
+
+[data-theme='nothing'] .goal-tile {
+  border: 0;
+}
+
+[data-theme='nothing'] .goal-emoji {
+  border-radius: 50%;
+  background: #0a0a0a;
+}
+
+[data-theme='nothing'] .goal-tile.on .goal-emoji {
+  background: #000;
+}
+
+[data-theme='nothing'] .goal-name {
+  font-weight: 500;
+}
+
+[data-theme='nothing'] .quest-main small {
+  color: var(--muted);
+}

@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { emptyState, type State } from './types';
+import { emptyState, legacyState, type State } from './types';
 import { DAY_MS } from './smoking';
 import { achievementDefs, evaluateAchievements, unlockedIds, TIERS } from './achievements';
 
 const T0 = new Date(2026, 9, 1, 8, 0).getTime();
-const mk = (p: Partial<State>): State => ({ ...emptyState(), ...p });
+const mk = (p: Partial<State>): State => ({ ...legacyState(), ...p });
 const days = (start: string, n: number) =>
   Array.from({ length: n }, (_, i) => {
     const d = new Date(2026, 8, Number(start.slice(-2)) + i, 12);
@@ -16,13 +16,13 @@ const get = (s: State, id: string, now = T0 + 40 * DAY_MS) =>
 
 describe('achievements', () => {
   it('has unique ids', () => {
-    const s = mk({ habits: [...emptyState().habits, { id: 'h-a', name: 'A', icon: '🧘', color: '#4da3ff', since: '2026-10-01' }] });
+    const s = mk({ habits: [...legacyState().habits, { id: 'h-a', name: 'A', icon: '🧘', color: '#4da3ff', since: '2026-10-01' }] });
     const ids = achievementDefs(s).map((a) => a.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('nothing unlocked for an empty state', () => {
-    expect(unlockedIds(emptyState(), T0)).toEqual([]);
+    expect(unlockedIds(legacyState(), T0)).toEqual([]);
   });
 
   it('first check-in unlocks first-rep / first-page', () => {
@@ -60,12 +60,12 @@ describe('achievements', () => {
   });
 
   it('every rarity tier has achievements', () => {
-    const tiers = new Set(evaluateAchievements(emptyState(), T0).map((a) => a.tier));
+    const tiers = new Set(evaluateAchievements(legacyState(), T0).map((a) => a.tier));
     expect([...tiers].sort()).toEqual([...TIERS].sort());
   });
 
   it('keeps the original achievement ids so earned badges are not re-celebrated', () => {
-    const ids = new Set(achievementDefs(emptyState()).map((a) => a.id));
+    const ids = new Set(achievementDefs({ ...legacyState(), smokingRuns: [{ start: T0 }] }).map((a) => a.id));
     for (const id of ['first-workout', 'workout-streak-365', 'first-reading', 'reading-streak-3', 'smoke-1d', 'smoke-365d', 'perfect-day', 'comeback']) {
       expect(ids.has(id)).toBe(true);
     }
@@ -73,7 +73,7 @@ describe('achievements', () => {
 
   it('custom habits get their own badge track', () => {
     const habit = { id: 'h-water', name: 'Water', icon: '💧', color: '#4da3ff', since: '2026-09-01' };
-    const s = mk({ habits: [...emptyState().habits, habit], checkins: { workout: [], reading: [], 'h-water': days('01', 8) } });
+    const s = mk({ habits: [...legacyState().habits, habit], checkins: { workout: [], reading: [], 'h-water': days('01', 8) } });
     expect(get(s, 'first-h-water').unlocked).toBe(true);
     expect(get(s, 'h-water-streak-7').unlocked).toBe(true);
     expect(get(s, 'h-water-streak-7').tier).toBe('rare');
@@ -100,7 +100,7 @@ describe('achievements', () => {
     const extra = ['a', 'b', 'c'].map((x) => ({ id: `h-${x}`, name: x, icon: '🎯', color: '#4da3ff', since: '2026-09-01' }));
     const day = ['2026-10-01'];
     const s = mk({
-      habits: [...emptyState().habits, ...extra],
+      habits: [...legacyState().habits, ...extra],
       checkins: { workout: day, reading: day, 'h-a': day, 'h-b': day, 'h-c': day },
     });
     expect(get(s, 'juggler').unlocked).toBe(true);
@@ -117,5 +117,12 @@ describe('achievements', () => {
     expect(get(s, 'comeback').unlocked).toBe(true);
     const s2 = mk({ checkins: { workout: ['2026-10-01', '2026-10-03'], reading: [] } });
     expect(get(s2, 'comeback').unlocked).toBe(false);
+  });
+});
+
+describe('achievements for a first-timer', () => {
+  it('has no smoke-free badges without the legacy smoke counter', () => {
+    expect(achievementDefs(emptyState()).some((a) => a.group === 'smoke')).toBe(false);
+    expect(achievementDefs({ ...legacyState(), smokingRuns: [{ start: T0 }] }).some((a) => a.group === 'smoke')).toBe(true);
   });
 });
